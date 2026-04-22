@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+**/*.log
+.git
+.github
+.vscode
+.idea
+*.md
+client/dist
+server/data/*.sqlite
+server/data/*.db

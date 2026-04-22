@@ -1,0 +1,316 @@
+Chapter 1: Claude Just Changed Stock Trading Forever
+0:00Claude just has changed how we trade stocks forever. And it's because of this new skill that lets it access live market data, track what Wall Street,
+0:077 secondsWales, and US politicians are buying and use that to play the stock market with all that information automatically. I've actually been using this for the past
+0:1414 secondscouple of weeks and it's completely changed how I think about trading. So,
+0:1818 secondsin this video, I'm going to be breaking down how you can get started in three levels. So, first we're going to get set up. I'll walk you through the basics of how trading works and we'll get Claude
+0:2626 secondsand all the tech set up. Then we're going to be building a copy trading bot.
+0:3030 secondsI'm going to be showing you how to track what Wall Street whales and US politicians are buying and have Claude copy their exact moves automatically.
+0:3636 secondsAnd level three, we're going to get into options. I'll break down what they are,
+0:3939 secondshow they work, and then we're going to be building a bot that runs one of the most consistent income strategies in trading called the wheel strategy. And
+0:4747 secondseven if you've never bought a single stock before or have zero technical background, you'll be able to do this because all we're going to be doing is simply speaking to Claude. Let's get into it.
+Chapter 2: Context
+0:5858 secondsOkay, before we get into anything, I need to give you some context on why I'm actually making this video and why this matters. Because for the first few years
+1:051 minute, 5 secondsof my career, I used to work at JP Morgan and I actually got to see how institutional trading works up close.
+1:111 minute, 11 secondsAnd the biggest thing I took away from that is the gap between Wall Street and regular people comes down to just three things. First, it's the data. So,
+1:181 minute, 18 secondsimagine like a poker game and you're sitting at a table with your two cards trying to figure out what to do, but the person across from you can see every
+1:251 minute, 25 secondscard on the table and every card in your hand. You'd probably never sit down at that table, right? And that's the stock market. That's what you're playing
+1:321 minute, 32 secondsagainst every single day. Wall Street knows when a billionaire places a massive bet on a stock. They know when a senator buys shares right before a major
+1:401 minute, 40 secondsannouncement. They see where the money is moving before you even hear about it on the news. And by the time you do hear about it, they've already made their money. So, you're stuck trading against
+1:481 minute, 48 secondspeople who have the information you don't have any access to. And unfortunately, that's the game. That's the kind of access that used to cost hundreds of thousands of dollars a year.
+1:581 minute, 58 secondsBut now, I'll show you how to access that kind of information with a single click of a few buttons. Second is execution. Say you spot the perfect
+2:052 minutes, 5 secondstrade, but you're at lunch or you hesitate for like 10 minutes and the window closes. Wall Street doesn't deal with that. They have systems watching
+2:122 minutes, 12 secondsthe market and placing trades around the clock automatically. And luckily, Claude can do that, too. Which brings us to number three, which is intelligence.
+2:202 minutes, 20 secondsHaving the data and the speed really means nothing if you don't have a plan.
+2:232 minutes, 23 secondsThe big guys have teams reading all that information and making calculated decisions. And to do all of that, you need to buy expensive tools. And if you
+2:312 minutes, 31 secondscouldn't afford the tools, you were locked out. But with Claw and these new skills, that barrier is gone. And I'm going to show you how to set all of that up.
+Chapter 3: Level 1: Setting Up Claude & Alpaca
+2:412 minutes, 41 secondsAll right, let's build this thing. I'm going to be explaining everything as we go. So, if you're brand new, just follow along. So, if our goal is to get Claude to trade stocks for us, to do that,
+2:502 minutes, 50 secondsClaude needs two things. It needs somewhere to place the trades, and it needs the information to decides what to trade. Let's start with the first one.
+2:582 minutes, 58 secondsAnd actually, back in the day, if you wanted to buy a stock, you'd have to call a person on the phone and say something like, I don't know, buy me 50 shares of IBM. That person was go to the
+3:063 minutes, 6 secondsstock exchange and make that happen for you. That whole system, the firm, the person, the access to the exchange, that's called a brokerage. But today,
+3:143 minutes, 14 secondsit's an app. You open up Robin Hood or Fidelity or tap a button and you own a stock. That's the same concept with just no phone call. But here's where it gets
+3:223 minutes, 22 secondsinteresting for us. Some brokerages actually let you skip that step entirely and connect it through code. And because Claude is so good at coding, that's what
+3:313 minutes, 31 secondswe need because we're not going to be the ones trading. Claude is. And we're going to be using a tool today called Alpaca. It's free to sign up and it
+3:393 minutes, 39 secondsgives you API access which is how we're going to get Claw to connect to it and place trades on our behalf. So, let me show you how to do that. Wait, but more importantly, before we get any further,
+Chapter 4: Disclaimer + What Is Paper Trading
+3:483 minutes, 48 secondsquick disclaimer. I'm not a financial adviser. This is not financial advice.
+3:523 minutes, 52 secondsI'm just showing you how to build cool stuff with AI. And everything we're doing today is in paper trading. And paper trading means that you're using
+3:593 minutes, 59 secondsfake money in a real market. So, it's the same stocks, the same prices,
+4:024 minutes, 2 secondseverything behaves the same way. You're just not risking a single dollar. Okay.
+4:054 minutes, 5 secondsSo, let's connect Claude to our brokerage.
+Chapter 5: Step 1: Download the Claude Desktop App
+4:104 minutes, 10 secondsOkay. So, to get started, what we're going to need first is the Claude desktop app. All right. So, I'm going to do claude uh.com/d download.
+4:204 minutes, 20 secondsAnd if you need any of these links, it's going to be in the link in the description below. If I'm going here and you see you just want to download this
+4:274 minutes, 27 secondsapp and you can use it for Windows or Mac, but make sure you download the cloud desktop app. Okay. All right. So
+4:344 minutes, 34 secondsafter you install the app, you'll get something that looks like this. Make sure your software or your Mac OS is up to date so you have everything available
+4:434 minutes, 43 secondsand ideally you have the pro or the max version of Claude paid for. Okay, so that's step number one. Step number two
+Chapter 6: Step 2: Create Your Alpaca Brokerage Account
+4:524 minutes, 52 secondsis we need to make our brokerage account. So I'm going to go back into my browser and I'm going to search up Alpaca. Uh,
+5:025 minutes, 2 secondsand you can see Alpaca Trading Platform and I'm going to go here and I'm going to sign up. All right. So, after you enter all your information and you go
+5:115 minutes, 11 secondsthrough, you're going to see you have this dashboard right here. And in this dashboard, if I go to the top left and I open this up and you see I have an
+5:205 minutes, 20 secondsindividual trading account, but everything we're going to be doing is not with real money. It's with paper money. So, what we're going to be using
+5:285 minutes, 28 secondsis this paper trading account. Okay? And you can, you know, if you want to make a new one, I'm gonna say, um, trading
+5:365 minutes, 36 secondsclaude. And let's say we can give ourselves, I don't know, $50,000.
+5:415 minutes, 41 secondsOkay. And save. And you can see right there, we're going to have a trading clot account. And I'm going to click
+5:485 minutes, 48 secondsthis. So now I have $50,000 to essentially play with in the stock market. All right. Now, I'm going to
+5:565 minutes, 56 secondsshow you how to get this connected with Claude. To get this connected with Cloud, what we're going to do is I'm going to scroll down right here. And you see right here where it says API keys.
+Chapter 7: Generating Your API Keys
+6:066 minutes, 6 secondsWhat we want to do is hit generate new API keys. Okay. And you can see there's three things, endpoint, key, and secret.
+6:156 minutes, 15 secondsWe're going to need all three of these. All right. So, let's get cloud set up.
+6:196 minutes, 19 secondsSo, I'm going to go back to my cloud app.
+6:226 minutes, 22 secondsAnd here, what I want you to do right now is hit this thing that says code.
+6:266 minutes, 26 secondsOkay. It's the same thing. We're just going to be talking to it, but [snorts]
+6:306 minutes, 30 secondsall it is is a little bit of a different interface. Okay. So, cool. We see this little guy here. And that means we're good to go. And I'm going to do is right
+6:396 minutes, 39 secondshere, I want you to hit this button right here and hit a new folder. Okay?
+6:456 minutes, 45 secondsBecause we want to keep everything we're doing organized. I'm going to go to documents and I'm going to hit new folder. And I'm going to call it trading.
+6:526 minutes, 52 secondsOkay? So now everything we do is going to be saved into this trading folder.
+6:586 minutes, 58 secondsAll right. Okay. I'm going to move this to the side. Now what I'm going to do is I'm going to be pasting in right here
+7:067 minutes, 6 secondsthis. And then go back to claude and then say end point. I'm going to say key.
+7:147 minutes, 14 secondsOops.
+7:167 minutes, 16 secondsClaude key.
+7:217 minutes, 21 secondsAnd then I'm going to say copy this one and then go to claude and then say secret.
+7:287 minutes, 28 secondsOkay. Now let's see if we can get our claude to trade a simple stock just to make sure
+Chapter 8: Making Your First Trade With Claude
+7:357 minutes, 35 secondsour connection is solid. And after our connection is solid, we'll build layers on top of that so we can actually get it to do some really cool stuff. All right.
+7:437 minutes, 43 secondsAll right. So what I'm going to be telling it is this. Hey, um, what I want you to do, I just gave you the
+7:517 minutes, 51 secondsdocumentation and my keys to connect to my Alpaca trading account.
+7:567 minutes, 56 secondsI'm just testing the connection right now. Can you please buy one share of Apple? I want to see it inside my account. All right,
+8:108 minutes, 10 secondsgreat. So, all this is good. Uh, right now just to make it a little faster, I'm going to right here click sonnet because
+8:178 minutes, 17 secondsthis is a very easy command. And I'm going to hit go.
+8:228 minutes, 22 secondsAll right. So, it's saying the order is placed successfully. Here's the summary. Now, if I go back here and if I reload.
+8:298 minutes, 29 secondsOkay, awesome. Uh, great. So, you see I already bought a share of Apple. Now,
+8:358 minutes, 35 secondsyou can trade by just talking to it. Be like, "Hey, can you sell that share of Apple and then buy a share of Tesla?
+8:458 minutes, 45 secondsGreat. Trust workspace. And here, this is what I want you to do as well.
+8:508 minutes, 50 secondsHey, can you make sure in this folder you save these credentials so I don't have to keep giving it to you when we want to trade. We're going to be using
+8:578 minutes, 57 secondsthis account. And in this folder, we're going to be doing a lot of trades.
+9:039 minutes, 3 secondsOkay. So, what we're going to do is because right here, we gave it access to all this stuff. I want to make sure I don't have to keep giving it access. I'm
+9:129 minutes, 12 secondsjust getting it to save these credentials inside a file. Right now,
+Chapter 9: Saving Your Credentials
+9:169 minutes, 16 secondsClaude can trade, but it's trading blind. It doesn't know what to buy, when to buy, or why. It's missing the most important piece, which is strategy. So,
+9:259 minutes, 25 secondslet's get into that.
+Chapter 10: Level 2: Building an Automated Trading Bot
+9:279 minutes, 27 secondsIn this level, we're going to turn Claude into something that runs on its own. So, basically, a bot that watches the market, makes its own decisions, and based on the rules you set. And the
+9:369 minutes, 36 secondsfirst strategy we're going to make, you can think of it like a smart thermostat.
+9:399 minutes, 39 secondsOnce you set the rules, if the room temperature, let's say, drops below 68° F, you're going to turn on the heat. If it goes above 75° F, you kick on the AC.
+9:479 minutes, 47 secondsThat means you don't have to sit there fiddling with your phones messing with the temperature all day. The thermostat does that all for you. It checks, it acts, and adjusts. And the bot is going
+9:559 minutes, 55 secondsto work exactly the same way. That means we're going to be setting some rules.
+9:589 minutes, 58 secondsAnd let me show you how this works by actually explaining the trailing stop strategy, which is a really good strategy used by many different traders.
+Chapter 11: How the Trailing Stop Strategy Works
+10:0510 minutes, 5 secondsLet me show you how the trailing stop strategy actually works. So, say you buy a stock at $100.
+10:1210 minutes, 12 secondsWell, let's say we tell Claude, if this drops to $95,
+10:1810 minutes, 18 secondssell it. That's your floor. $5 is the most you're willing to risk on this trade. Now, if the stock starts climbing
+10:2710 minutes, 27 secondsup and let's say hits 110, if it didn't go down, but your floor is still sitting at that 95,
+10:3710 minutes, 37 secondsthen you're exposed to a $15 fall. That makes no sense. So, what we want is Claude to move up our floor to 105,
+10:4810 minutes, 48 secondswhich means if the stock dips and hits the new floor, you're still up $5 in profit and you were protected the entire
+10:5610 minutes, 56 secondstime. But what if the stock drops right out the gate, right? Well, that means it would just hit $95 and you'd sell it and you're out $5 and that's your loss. Now,
+11:0811 minutes, 8 secondshere's the important part. You're not stuck. You've still got that capital.
+11:1211 minutes, 12 secondsClaude can now take that money and goes looking for the next setup. Maybe it's the same stock a week later at a better
+11:2011 minutes, 20 secondsprice. Maybe it's a completely different opportunity. The point is you lost a small portion that you're okay to lose
+11:2711 minutes, 27 secondsand risk. Basically, you live to trade another day. And ideally, we find trades like this. So, let's say the stock keeps
+11:3511 minutes, 35 secondsclimbing and every time it does, Claude is going to drag the floor higher and higher. You can never fall back to where
+11:4311 minutes, 43 secondsyou started. It's basically now going to sell at 110. So, you get that $10 in profit, which is a 10% gain. That's a
+11:5211 minutes, 52 secondstrailing stop. You set the rules once and Claude follows them every second of the day. You're always protected and
+12:0012 minutesyou're always locking in the gains. So when a trade doesn't work out, you move on fast with the most amount of money still in your pocket. Now, why am I
+12:0912 minutes, 9 secondstelling you all of this? Because the worst thing you can really do is hand your AI a pile of money and be like, "Go figure it out." The rules aren't the
+12:1712 minutes, 17 secondslimitation. That's the whole point. This is how you take what you know, your instincts, your risk tolerance, your read on the market, and you encode it.
+12:2612 minutes, 26 secondsThe same rules are true here. Claude can execute thousands of decisions faster than any human. It's executing your
+12:3312 minutes, 33 secondsdecisions, just running at the speed and discipline that you never could on your own. That's what makes this different from just letting AI loose. And I'll
+12:4212 minutes, 42 secondsshow you how to set this all up in the next portion. And to set this up, it's actually really simple. So, I'm just back in my chat where I have been
+Chapter 12: Setting Up the Trailing Stop Bot on Tesla
+12:5012 minutes, 50 secondsspeaking with my Claude and I'm just going to be speaking to it, right? And just to make it a little easier, if you guys wanted this in my classroom, uh, if
+12:5912 minutes, 59 secondsyou guys are already watching this, if you go to skills, you'll see I have a bunch of skills here. So, this is the prompt. We're essentially going to be speaking to our claude, right? So, let me just go to Claude. And right now,
+13:0913 minutes, 9 secondsdon't worry about it. If you want those docs, it's there, but you can follow along with me in this video. So, I'm just going to speak it to it. All right.
+13:1713 minutes, 17 secondsSo, I want your help to actually schedule a trailing stop strategy on let's say Tesla, right? I want you to
+13:2613 minutes, 26 secondsbuy Tesla using Alpaka paper trading account. Buy, I don't know, like 10 shares at the market price right now and set up these rules. The floor, if the
+13:3613 minutes, 36 secondsstock drops, let's say by 10%, sell everything. That's my stop loss. I don't want to lose more than that on this
+13:4313 minutes, 43 secondstrade. the trailing floor. If the stock goes up 10% from what I paid, move my stop loss up, maybe move it up 5% below the current price. Every time it climbs,
+13:5613 minutes, 56 secondsmove another 5% up the floor again. So,
+13:5913 minutes, 59 secondsthe floor only goes up, never down. And then I want you to also ladder in. If the stock drops, let's say by over 20,
+14:0714 minutes, 7 seconds30%. Buy a bunch more shares. Let's say 10 more shares. if it drops by, let's say, 20%, buy 20 shares. This way, I'm
+14:1514 minutes, 15 secondsgetting better prices on the way down instead of just losing money. And after you set this up, show me a summary of every order. And right after you place
+14:2314 minutes, 23 secondsit, so I can confirm this looks right.
+14:3014 minutes, 30 secondsOkay, so I word vomited some stuff there. [laughter] And um let this finish and I'll show you what this looks like.
+14:3714 minutes, 37 secondsSo, I see it just got done and it says this is the current price. And if I go back to my alpaca dashboard, I can see
+14:4414 minutes, 44 secondsit set some price. It bought some Tesla and then it even set a stop loss right here. Now, one more thing we need to do
+14:5414 minutes, 54 secondsis make sure we go back here and be like, "Hey, can you set up during market hours every day that you're checking
+15:0415 minutes, 4 secondsconsistently when we need to move our floor up or need to make new stop- losses or
+15:1115 minutes, 11 secondsre-enter, use the slash schedule to make sure we have that going and set your own schedules.
+Chapter 13: Scheduling Claude to Run Automatically
+15:2115 minutes, 21 secondsSo, this just executed one trade. Now,
+15:2415 minutes, 24 secondswhat I want is clot to basically be alive and keep looping and checking on a schedule like, hey, are these trades
+15:3115 minutes, 31 secondslooking right? Do I need to re-enter? Do I need to move my floor up? all of that stuff. Normally, we'd have to do it, but right now with the command I just gave
+15:4015 minutes, 40 secondsit, it should be able to do it on its own.
+15:4415 minutes, 44 secondsOkay, so it just got done and it says literally Tesla trailing stop monitor and it's going to be doing that every 5 minutes from Monday to Friday 9:00 a.m.
+15:5515 minutes, 55 secondsAnd it's going to keep checking. And just so you're clear on the left hand side, if you hit see this clock, if you
+16:0316 minutes, 3 secondshit this clock, it says scheduled. And if you open it up, these local tasks are already going to be running right here.
+16:1016 minutes, 10 secondsYou can see it already set the schedule for me. I didn't have to touch this. And if my computer is on, it's going to be running this on its own. Now, we have
+16:1916 minutes, 19 secondsbasically made a trading bot. Now, let's go through a couple different scenarios. Hey, so just briefly and really quickly,
+Chapter 14: Testing Different Scenarios With Claude
+16:2916 minutes, 29 secondscan you tell me what would happen if let's say Tesla shoots up to $500 randomly? What would you do?
+16:3916 minutes, 39 secondsAnd right now I'm roleplaying it just so you understand and I encourage you to do this as well so you understand what
+16:4716 minutes, 47 secondswould happen in different scenarios and what would it actually do and if you do really need to change its thinking and thought processes around you could just be like hey change this around. Okay.
+16:5716 minutes, 57 secondsAnd right here it just done it says if Tesla shoots to 500 on the way up the trailing stops kick in trailing activates your floor moves up up etc.
+17:0817 minutes, 8 secondsAnd that's about it. Yeah, this is a really cool way to do ladder buys. Those don't trigger at all. You see, right
+Chapter 15: Adding Ladder Buys to Your Strategy
+17:1617 minutes, 16 secondsnow, I don't have any of them. So, I'm going to be like, can you think about what are good ladder buys and make sure you set that up in the schedule and
+17:2417 minutes, 24 secondsupdate the strategy inside our whole strategy of what we're trading right now.
+17:3217 minutes, 32 secondsSo, as the price goes up, it buys in gradually. So, we're always at somewhat of a profit and we're pretty safe in our
+17:4017 minutes, 40 secondsbuys. And just so you see, it even gave me the latter levels of if it's negative 15%, it's going to buy 10. If it's 50%,
+17:4817 minutes, 48 secondsit's going to buy 50. You can always change this around, but this is really cool now that me without me having to do any of this stuff, Claude can just
+17:5617 minutes, 56 secondsaction it for me. Now, this is all great. But the thing is, we're still picking stocks ourselves. We choose Tesla because we like it, but that's a
+18:0418 minutes, 4 secondsgut feeling. The biggest traders and the best traders in the world don't trade on gut feelings. They trade on information.
+18:1118 minutes, 11 secondsSo, in the next level, we're going to be showing Claude where the smart money is so Claude can actually make informed decisions.
+Chapter 16: The Problem With Gut Feeling Trading
+18:1918 minutes, 19 secondsBut what is smart money? Well, on Wall Street, there are people who move millions of dollars in a single trade.
+18:2618 minutes, 26 secondsWhen someone puts, let's say, $50 million into a stock, they didn't really just do that off a gut feeling or flipping a coin. They have a lot of
+18:3518 minutes, 35 secondsresearch teams and a lot of private data. They know something. These people are called whales. And when these whales
+18:4118 minutes, 41 secondsmake a big move, it leaves a trail like massive options orders, unusual volumes on a stock out of nowhere. And a group
+18:5018 minutes, 50 secondsthat does this a lot is surprisingly US politicians. But the nice part is that the members of Congress are required by
+18:5818 minutes, 58 secondslaw to report their stock trades. The data shows is that many of them consistently beat the market. They sit on committees. They regulate entire
+19:0519 minutes, 5 secondsindustries. They get briefed on policy changes before the public even hears about them. They know which companies are about to get a government contract
+19:1419 minutes, 14 secondsand which ones may get investigated, but you can't see what they bought and follow them. And most people have no
+Chapter 17: What Is Smart Money & Who Are the Whales
+19:2219 minutes, 22 secondsidea this data exists, but it's there and Claude can read it. But the thing is, we can't just tell Claw to go scour
+19:2919 minutes, 29 secondsthe internet for these hedge funds trades and congressional filings and all that. There's millions of data points hitting the market every single day. No
+19:3819 minutes, 38 secondsAI can really browse its way through all of that. But there are services that do this full time. These companies are
+19:4619 minutes, 46 secondsscraping and organizing all this data around the clock. And the data is sitting there waiting to be tracked and updated every day. And what we need to
+19:5419 minutes, 54 secondsdo is plug Claude into that. And that's what this new skill and MCP does. Think of it like a power outlet. The
+Chapter 18: How MCP Plugs Claude Into Insider Data
+20:0220 minutes, 2 secondselectricity, the insider information is running through those walls. And we basically plug our claude into that so
+20:0920 minutes, 9 secondswe can use it. These services have data flowing through their systems and the MCP is the plug that connects Claude to their data. And once it's plugged in,
+20:1920 minutes, 19 secondsClaude can pull from at any time. it becomes a new skill and Claude goes from being smart but working with nothing to
+20:2620 minutes, 26 secondsbeing smart and seeing what the big players in the market see. Next, what we're going to do is give our Claude the power to access these services and it's
+20:3520 minutes, 35 secondsgoing to be super easy. So, let's get into that. And just to emphasize why I'm so excited about this strategy I'm about to show you. This is me just backdating.
+Chapter 19: McCaul vs S&P 500 — The Results
+20:4520 minutes, 45 secondsLet's say a year ago, you were copying the same thing and the same strategy by copying the smart money.
+20:5220 minutes, 52 secondsYou can see if you were following the S&P 500, you were just buying and holding it, you would have made around
+21:0021 minutesstarting at a 50k account, you would have made around 57750,
+21:0521 minutes, 5 secondswhich is around 15%. So, you would have made 15% more money. But if you copied
+21:1121 minutes, 11 secondsMcCall, then you would have made 67,400 by the end of the year, which is a 34.8%
+21:2021 minutes, 20 secondsreturn. You can see how these politicians have access to this insider information and they can out compete everybody. And that's what I'm going to
+21:2921 minutes, 29 secondsshow you how to do. And just to make sure our strategies are organized, what I'm going to do is go to another paper trading account. So right here, I'm
+Chapter 20: Level 3: Setting Up the Copy Trading Bot
+21:3721 minutes, 37 secondsgoing to use this Son account and I'm going to do the same thing. Okay. So I'm going to hit generate keys. I'm going to
+21:4521 minutes, 45 secondstake all of the stuff or I can just copy and paste this and then I can go back to my claude.
+21:5421 minutes, 54 secondsAnd then what I'm going to do now is make a new session. So going to hit new session and I'm going to paste this in.
+22:0022 minutesAnd now what I'm going to do is the service we're going to use to track these politicians. If you go to Google,
+Chapter 21: Using Capitol Trades to Track Politicians
+22:0722 minutes, 7 secondsI'm going to do Capital Trades. And Capital Trades is a free service that you can be using to see which politician
+22:1522 minutes, 15 secondsis trading what and what's going on. So I'm going to copy this URL. I'm going to go back to my Claude
+22:2222 minutes, 22 secondsand go right here. Okay. So now uh by the way the prompts are going to be in the description below but right now hey
+22:3022 minutes, 30 secondsso um I'm trying to set up a copy trading bot when I've also given you access to my alpaca account. I want you
+22:3922 minutes, 39 secondsto make a new folder inside this uh folder so we can have this running and have the schedules done. But what I want
+22:4822 minutes, 48 secondsyou to do is number one, find a politician who has been having really good success in the stock market
+22:5522 minutes, 55 secondscurrently and is actively trading. And then what I want you to do is copy their trades. Okay? So set up your crown jobs
+23:0423 minutes, 4 secondsand your schedules so you're always looking and using capital trades to see what they're up to and copy those
+23:1023 minutes, 10 secondstrades. Make sure you buy, sell, buy the same options that they knew. Whatever you need to just copy them and then we're going to be tracking that over time. All right.
+23:2123 minutes, 21 secondsAnd you're going to be using the Alpaca account that I just posted the image of.
+23:2823 minutes, 28 secondsGreat. I'm going to hit bypass permissions, enter bypass mode, and then hit enter. All right, that was super easy. Let me wait for this to finish and
+23:3623 minutes, 36 secondswe can see what's going on. Okay, so it just got done and I see in my schedule,
+Chapter 22: Claude Picks Michael McCaul Automatically
+23:4123 minutes, 41 secondsit's already set a schedule to see what [clears throat] these politicians are doing. And then I actually also asked it, who are you copy trading and why?
+23:5023 minutes, 50 secondsAnd it chose Michael Macau. All right,
+23:5523 minutes, 55 secondsvery interesting. And why is basically okay [snorts] and why the algorithm picked him over the others? Because it seems
+24:0324 minutes, 3 secondslike he is very active right now and he's the top trader. interesting. The trades may be slightly stale, but that's
+24:1024 minutes, 10 secondsthe nature of how they disclose, we still get a lot of gains because mostly Congress can buy like 2 years out or
+24:1824 minutes, 18 secondssomething like that. So, they don't do day trading and they're not allowed to do it. That's why even if we're a little late because we know about it later, we
+24:2724 minutes, 27 secondscan still make those gains. And just to reiterate, you can see this is a simulation for the year. If we started one year ago and did this exact same
+24:3524 minutes, 35 secondsthing, if we copied this exact same strategy, this bot would have made an extra $9,650
+24:4324 minutes, 43 secondsin comparison to the S&P, which should have only made around $7,000.
+24:4924 minutes, 49 secondsSo that's a 2.2x return over the S&P 500. And that's how these guys just stay so rich. It's kind of crazy.
+Chapter 23: Level 3: Options & The Wheel Strategy
+24:5824 minutes, 58 secondsSo, with that out of the way, now I'm going to show you the third strategy,
+25:0225 minutes, 2 secondswhich is a strategy that really advanced people use, which means you can get paid no matter which direction the stock
+25:0925 minutes, 9 secondsmoves. And to understand that, I'm going to explain how options work. Okay, so what is an option? Well, an option is
+Chapter 24: What Is an Option? (Simple Explanation)
+25:1625 minutes, 16 secondsbasically a contract when two people agree to do a deal. And let me show you this with something you already may know. Okay, so let's say you pay your
+25:2325 minutes, 23 secondscar insurance company $100 a month. In exchange, you get the right to file a claim if something goes wrong. And if you crash, the insurance covers it.
+25:3225 minutes, 32 secondsYou're protected. And if nothing happens, they keep your hundred bucks.
+25:3625 minutes, 36 secondsThey're basically getting paid to take on the risk. Now, look at this exact same structure. What happens is you pay a premium to another trader where you
+25:4425 minutes, 44 secondsget the right to buy or sell a stock at a locked price. Okay? And if the stock moves your way, you can exercise that
+25:5325 minutes, 53 secondscontract and profit. If the stock doesn't move your way, the contract will expire. They keep your premium. It's the
+26:0126 minutes, 1 secondsame deal. You basically paid for protection. They got paid for the risk.
+26:0626 minutes, 6 secondsAnd here it is next to each other rowby row. It's identical. The premium, the right to act, the expiration date, and if nothing happens, the other side keeps
+26:1526 minutes, 15 secondsyour money. That's all an option is insurance on a stock. Okay? And to dive in, there are only two types of options.
+Chapter 25: Call Options Explained
+26:2326 minutes, 23 secondsA call option gives you the right to buy a stock at a locked in price. Say Apple is at $200.
+26:3126 minutes, 31 secondsYou can buy a call option with a strike price of $210. That means if Apple goes to let's say 230 before your contract
+26:4026 minutes, 40 secondsexpires, you can buy it at 210 and pocket that $20 difference. If Apple
+26:4726 minutes, 47 secondsstays below 210, your contract expires and you lose the premium you paid.
+26:5226 minutes, 52 secondsThat's your max loss. Think of it like putting a deposit on an apartment.
+26:5526 minutes, 55 secondsYou'll pay $500 to lock in the rent for $2,000 for 30 days. If the rent price jumps to $2,500, you got a deal. If they
+27:0327 minutes, 3 secondsdon't, you lost that $500 deposit. And on the other side is a put option. The put option gives you the right to sell a
+Chapter 26: Put Options Explained
+27:1227 minutes, 12 secondsstock at a locked in price. Say you own Apple at $200. You buy a put option with
+27:1827 minutes, 18 secondsa strike price of 190. If Apple drops to 170, you can sell it at 190 instead of
+27:2627 minutes, 26 seconds170. The put basically protected you from the drop. That's the insurance side. You paid a premium to protect yourself against the price drop. Why
+27:3427 minutes, 34 secondsthis is interesting is because with stocks and options, you can actually flip the table and become the insurance as well. So that is called selling
+Chapter 27: How Selling Options Makes You the Insurance Company
+27:4327 minutes, 43 secondsoptions. So when you sell an option, you basically become the insurance company.
+27:4827 minutes, 48 secondsyou're the one that's collecting the premiums. So, someone pays you for a contract and most of the time that
+27:5627 minutes, 56 secondscontract expires without anything happening and you keep the money. And the cool part is the insurance companies make billions doing this. They collect
+28:0428 minutes, 4 secondspremiums after premiums from millions of people and pay out on a small percentage of claims. The math basically works in
+28:1228 minutes, 12 secondstheir favor over time. And selling options basically work the same way where you collect a premium upfront and if the stock doesn't hit the strike
+28:2128 minutes, 21 secondsprice by the expiration, your contract dies and you keep everything you were paid. And the wheel strategy is built on
+Chapter 28: The Wheel Strategy Step by Step
+28:2928 minutes, 29 secondsselling options. You are the insurance company. You collect premiums at every stage. And let me show you how that works. Okay, so let's walk through the
+28:3828 minutes, 38 secondswheel strategy with a real example with let's say Tesla. So Tesla is trading at $250 and let's say you really like the
+28:4728 minutes, 47 secondsstock, but you're not paying $250 for it. You'd rather get it at let's say $230. So if you sell a put at the 230
+28:5728 minutes, 57 secondsstrike and for making that promise for saying I'll buy Tesla at 230 if the price drops there, someone is going to
+29:0529 minutes, 5 secondshand you $5 per share. That's $500 in your pocket right now just for agreeing to do a deal you already wanted. Now,
+29:1429 minutes, 14 secondstwo things can happen. Tesla can stay above $230, which means the contract might expire. Nobody makes you buy
+29:2329 minutes, 23 secondsanything and you get to keep the $500 and you can do it again the next week.
+29:2929 minutes, 29 secondsThe other scenario is Tesla drops below 230 and you have to buy it. But remember, you collected $500 before already. So your real cost isn't 230,
+29:4129 minutes, 41 secondsit's 225. You got Tesla cheaper than anyone else, and you wanted it anyways.
+29:4629 minutes, 46 secondsOkay, so stage two, let's say Tesla does drop and you get assigned, which means you have to buy the Tesla shares. Now you own 100 shares at an effective cost
+29:5529 minutes, 55 secondsof 225. Most people would be upset, but you're not because you set the price.
+30:0130 minutes, 1 secondYou got paid to wait and you bought it at a discount. Right? That's not a loss.
+30:0530 minutes, 5 secondsThat's a your plan working. Now, it's time for stage number two. Okay. Now that we own the shares and they're sitting in our account, what we're going
+30:1430 minutes, 14 secondsto do is we're going to sell a covered call, which means we will pick a 260 strike price. That means someone is going to pay us another $5 per share,
+30:2530 minutes, 25 secondswhich is another $500 for the right to buy your Tesla shares for $ 260. If Tesla stays below 260, that contract
+30:3430 minutes, 34 secondsexpires, you keep the shares and you keep the $500 and you can sell that call again the next week. This is cool
+30:4230 minutes, 42 secondsbecause you're generating income from a stock that isn't even moving because if Tesla does go above 260, your shares get
+30:4930 minutes, 49 secondssold. But look at the math. So let's say you bought the Tesla shares at 225. You sold it at 260. That's a $35 per share
+30:5930 minutes, 59 secondsin stock gains plus the $5 you collected selling that put plus the $5 you
+31:0531 minutes, 5 secondscollected selling the call. That's $45 per share in total profit on 100 shares.
+31:1231 minutes, 12 secondsThat's $4,500. And here's the best part.
+31:1531 minutes, 15 secondsOnce your shares get called away, you go right back to stage one. You sell another put, collect another premium,
+31:2231 minutes, 22 secondsand the wheel just keeps spinning. every single rotation you get paid. The stock can go up, down, sideways, it doesn't
+31:3031 minutes, 30 secondsmatter. You're collecting income at every stage. The wheel strategy sounds great until you try to run it for yourself. You're picking strike prices
+Chapter 29: Why Most People Fail at the Wheel
+31:3731 minutes, 37 secondsbased on your market conditions and all these other things every single week.
+31:4331 minutes, 43 secondsMost people who learn about this wheel give up after a few weeks because management is what buries them. And the cool part about Claude and I'm what I'm
+31:5131 minutes, 51 secondsabout to show you is that Claude handles all of it. Which means Claude itself can monitor the positions, pick expirations,
+32:0032 minutesand roll contracts when needed. Which means you just collect the premiums on a schedule and you'll check in, let's say,
+32:0732 minutes, 7 secondsonce a day. So with that out of the way,
+Chapter 30: Building the Wheel Strategy Bot With Claude
+32:1132 minutes, 11 secondsunderstanding why Claude makes this so effective, let's set one up. Okay, so for this we're going to be using the
+32:1832 minutes, 18 secondsfirst trading claude account and I'm going to go back to Claude. And you see I actually have a prompt right here that
+32:2632 minutes, 26 secondsyou can copy paste and just so you can follow along I'll read it out to you.
+32:3232 minutes, 32 secondsOkay. So, what this is is basically I want you to run a wheel strategy on let
+32:3932 minutes, 39 secondsme see Tesla using my alpaca trading account. Stage
+32:4632 minutes, 46 secondsone, you sell the puts. So, you sell a cash secured put on Tesla with a strike price around 10% below the current
+32:5332 minutes, 53 secondsprice. Pick an expiration 2 to 4 weeks out. Collect the premiums. If the put expires worthless, sell another one and
+33:0233 minutes, 2 secondskeep collecting premiums. If I get assigned, I have to buy the stock, move to stage two. Stage two is selling the
+33:0933 minutes, 9 secondscalls. Once I own the shares, sell covered calls with the strike price around 10% of above what I paid. Pick an expiration, maybe 2 to 4 weeks out.
+33:2033 minutes, 20 secondsCollect the premium. If the call expires worthless, sell another. Keep collecting premiums. If my shares get called away
+33:2833 minutes, 28 secondslike sold, go back to stage one and start again. And the rules are never sell a put unless I have enough cash to
+33:3533 minutes, 35 secondsbuy the shares if assigned and never sell a call below my cost basis, what I actually paid and track my premium
+33:4433 minutes, 44 secondsacross all cycles and check my positions every 15 minutes during market hours.
+33:4933 minutes, 49 secondsPlease set the schedule. If a contract hits 50% profit before expiration, close it early and give me a daily summary at
+33:5733 minutes, 57 secondsmarkets close. All right, run this during market hours. Do nothing outside market hours. Great.
+34:0434 minutes, 4 secondsThat's what that prompt was. Now, I'm going to hit enter and wait. But that's about it. You're going to see after this
+34:1134 minutes, 11 secondsis done. I'll show you in a bit. It's going to set the things in a schedule.
+34:1434 minutes, 14 secondsIt's going to keep running this. And I encourage you to maybe set up a paper trading account and then have a go at it. See how it will do. These are just
+34:2434 minutes, 24 secondssome fun strategies that I've been playing with that I think have been pretty useful and super revolutionary of what we can really do with Claude. But,
+34:3634 minutes, 36 secondsyou know, if you're watching this and you can see the power of Claude, but haven't used it before, or you tried it,
+34:4234 minutes, 42 secondsbut you're not sure how to get the most out of it, I'm actually putting together a full course that's going to walk through everything from scratch. How to set up Cloud, how to use it, how to
+34:5134 minutes, 51 secondsbuild projects, like this one, step by step. So, stay subscribed for that. And in the meantime, watch this video. If you want to see me going deeper of any
+34:5934 minutes, 59 secondsof these strategies or build something else together, join my clot club where we can do this and we'll have some
+
+Sync to video time
+
+All
+
+From Samin Yasar
+

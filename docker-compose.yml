@@ -1,0 +1,61 @@
+# Local-dev / single-box deployment. Runs Postgres + the bundled app
+# (server with baked-in built client) behind a single published port.
+#
+# Usage:
+#   cp .env.example .env && edit values
+#   docker compose up --build
+#
+# For production you likely want a managed Postgres (RDS / Cloud SQL) instead
+# of the local volume — the app container is identical either way.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-trading}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-trading}
+      POSTGRES_DB: ${DB_NAME:-trading}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-trading} -d ${DB_NAME:-trading}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Don't expose Postgres on the host by default — the app talks to it over
+    # the compose network. Uncomment to point a local psql at it.
+    # ports: ["5432:5432"]
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      SERVER_PORT: 3001
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-trading}
+      DB_PASSWORD: ${DB_PASSWORD:-trading}
+      DB_NAME: ${DB_NAME:-trading}
+      # Secrets — override in a .env file. Never commit real values.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      ALPACA_API_KEY: ${ALPACA_API_KEY:-}
+      ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
+      ALPACA_BASE_URL: ${ALPACA_BASE_URL:-https://paper-api.alpaca.markets}
+      ALPACA_LIVE_TRADING: ${ALPACA_LIVE_TRADING:-false}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+    ports:
+      - "${APP_PORT:-3001}:3001"
+
+volumes:
+  db-data:

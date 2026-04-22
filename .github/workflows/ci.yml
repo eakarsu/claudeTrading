@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel older runs on the same ref when a newer commit lands — we don't need
+# to keep burning minutes on obsolete commits in a PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server — lint + test
+    runs-on: ubuntu-latest
+    # Postgres service for integration tests. The app reads DB_HOST=localhost
+    # in CI because GitHub maps service ports onto the job container.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: trading
+          POSTGRES_PASSWORD: trading
+          POSTGRES_DB: trading_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U trading"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: trading
+      DB_PASSWORD: trading
+      DB_NAME: trading_test
+      JWT_SECRET: ci-only-not-a-real-secret
+      ALPACA_API_KEY: ci-dummy
+      ALPACA_API_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install
+        working-directory: server
+        run: npm ci
+      - name: Lint
+        working-directory: server
+        run: npm run lint --if-present
+      - name: Test
+        working-directory: server
+        run: npm test
+
+  client:
+    name: Client — build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install
+        working-directory: client
+        run: npm ci
+      - name: Lint
+        working-directory: client
+        run: npm run lint --if-present
+      - name: Build
+        working-directory: client
+        run: npm run build
+
+  docker:
+    name: Docker — image builds
+    needs: [server, client]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # Build only — don't push. Pushing requires secrets we don't assume
+      # exist. Validates that the Dockerfile still produces a runnable image.
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: claudetrading:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
