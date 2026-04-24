@@ -19,9 +19,9 @@ for multi-tenant SaaS exposure on the public internet — see
 
 ## 2. Environment variables
 
-Copy `.env.example` (create one by starting from the list below) and fill it
-in. **Every secret must be set explicitly** — the server refuses to start
-with an unset `JWT_SECRET`.
+Create a `.env` file at the repo root using the list below. **Every secret
+must be set explicitly** — the server refuses to start with an unset
+`JWT_SECRET`.
 
 | Variable | Required | Purpose |
 |---|---|---|

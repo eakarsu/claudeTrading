@@ -1,0 +1,95 @@
+# Production compose for Hostinger VPS.
+#
+# Pulls a pre-built image from the registry (built on the developer's machine
+# with `docker buildx build --platform linux/amd64,linux/arm64 --push`) and
+# runs it alongside Postgres + a Caddy reverse proxy for TLS.
+#
+# Usage on the VPS (one-time):
+#   scp -r deploy/ root@vps:/opt/claude-trading/
+#   ssh root@vps
+#   cd /opt/claude-trading
+#   # Write /opt/claude-trading/.env with all production secrets — do NOT
+#   # commit this file to git. See DEPLOY_HOSTINGER.md for the var list.
+#   docker login                     # if the registry is private
+#   docker compose -f compose.prod.yml pull
+#   docker compose -f compose.prod.yml up -d
+#
+# Subsequent deploys:
+#   docker compose -f compose.prod.yml pull && docker compose -f compose.prod.yml up -d
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${DB_USER:-trading}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      POSTGRES_DB:       ${DB_NAME:-trading}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-trading} -d ${DB_NAME:-trading}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not exposed on the host — the app reaches it over the compose network.
+
+  app:
+    # Override IMAGE via .env to point at your registry image, e.g.
+    #   IMAGE=docker.io/yourname/claude-trading:latest
+    image: ${IMAGE:?IMAGE required — set to your registry/tag}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV:          production
+      SERVER_PORT:       3001
+      # The app reads DATABASE_URL (see server/db.js). Compose host is the
+      # service name "db" on the internal network.
+      DATABASE_URL:      postgres://${DB_USER:-trading}:${DB_PASSWORD}@db:5432/${DB_NAME:-trading}
+      JWT_SECRET:        ${JWT_SECRET:?JWT_SECRET required}
+      # Alpaca — note the server uses ALPACA_ENDPOINT (not ALPACA_BASE_URL).
+      # orderflow.js reads ALPACA_KEY_ID/ALPACA_SECRET_KEY; alpaca.js reads
+      # ALPACA_API_KEY/ALPACA_API_SECRET. Pass both naming pairs so both work.
+      ALPACA_API_KEY:    ${ALPACA_API_KEY:-}
+      ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
+      ALPACA_KEY_ID:     ${ALPACA_API_KEY:-}
+      ALPACA_SECRET_KEY: ${ALPACA_API_SECRET:-}
+      ALPACA_ENDPOINT:   ${ALPACA_ENDPOINT:-https://paper-api.alpaca.markets}
+      ALPACA_LIVE_TRADING: ${ALPACA_LIVE_TRADING:-false}
+      # OpenRouter — the project uses OpenRouter (not the Anthropic API directly).
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL:   ${OPENROUTER_MODEL:-anthropic/claude-haiku-4.5}
+      ANTHROPIC_API_KEY:  ${ANTHROPIC_API_KEY:-}
+      RESEND_API_KEY:    ${RESEND_API_KEY:-}
+      RESEND_FROM:       ${RESEND_FROM:-}
+      CORS_ORIGIN:       ${CORS_ORIGIN:?CORS_ORIGIN required — your https domain}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
+      DEMO_EMAIL:        ${DEMO_EMAIL:-}
+      DEMO_PASSWORD:     ${DEMO_PASSWORD:-}
+      FREQAI_PY_URL:     ${FREQAI_PY_URL:-}
+      FREQAI_PY_TOKEN:   ${FREQAI_PY_TOKEN:-}
+    # Not published to the host — Caddy reaches it over the compose network.
+    expose:
+      - "3001"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN required (e.g. app.example.com)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

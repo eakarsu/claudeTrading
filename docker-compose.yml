@@ -2,7 +2,7 @@
 # (server with baked-in built client) behind a single published port.
 #
 # Usage:
-#   cp .env.example .env && edit values
+#   create a .env file at the repo root with the variables referenced below
 #   docker compose up --build
 #
 # For production you likely want a managed Postgres (RDS / Cloud SQL) instead

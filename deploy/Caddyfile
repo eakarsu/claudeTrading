@@ -1,0 +1,25 @@
+# Caddy reverse proxy — handles TLS via Let's Encrypt automatically.
+# The `{$DOMAIN}` placeholder is substituted from compose env at container
+# start. Point your DNS A record at the VPS public IP before bringing this
+# up, or the ACME challenge will fail.
+
+{$DOMAIN}, www.{$DOMAIN} {
+    encode gzip
+    # Node server listens on 3001 inside the compose network.
+    reverse_proxy app:3001
+
+    # Basic security headers. The app sets its own CSP via securityHeaders
+    # middleware — don't duplicate those here.
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options    "nosniff"
+        Referrer-Policy           "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Reject obvious crawler/exploit paths early so they don't hit the app.
+    @blocked {
+        path /.env /.git/* /wp-admin/* /wp-login.php
+    }
+    respond @blocked 404
+}
