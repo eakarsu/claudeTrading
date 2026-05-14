@@ -35,6 +35,18 @@ export const aiLimiter = createLimiter({
   message: 'AI rate limit exceeded',
 });
 
+/**
+ * Hourly AI budget — 20 AI calls per user per hour. This is the cross-project
+ * standard "aiRateLimiter" that bounds runaway token spend even when individual
+ * minutes stay under the burst cap. Configurable via AI_HOURLY_LIMIT.
+ */
+export const aiHourlyLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: parseInt(process.env.AI_HOURLY_LIMIT || '20', 10),
+  keyFn: (req) => req.userId || req.ip,
+  message: 'Hourly AI budget exhausted (20 calls/hr). Try again later.',
+});
+
 export const tradeLimiter = createLimiter({
   windowMs: 60 * 1000,
   max: 30,

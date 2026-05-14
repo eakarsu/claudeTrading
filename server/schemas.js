@@ -226,6 +226,9 @@ export const eventCalendarCreateSchema = z.object({
 export const autoTraderStartSchema = z.object({
   strategy: z.string().min(1),
   symbols: z.array(symbolSchema).min(1).max(50),
+  // When the server is in live mode, the client must echo `confirmLive: true` to
+  // start. Closes the audit gap "no paper-vs-live trading guardrail visible".
+  confirmLive: z.boolean().optional(),
   config: z
     .object({
       maxPositionSize: z.number().positive().max(100000).optional(),

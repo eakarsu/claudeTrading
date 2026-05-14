@@ -9,6 +9,24 @@ import DemoBanner from './components/DemoBanner';
 // pages) are only downloaded when the user opens them.
 import Login from './pages/Login';
 
+// // === Batch 09 Gaps & Frontend Mounts ===
+const PredictiveEquityCurveDrawdownRecoveryTimeCfs = React.lazy(() => import('./pages/Batch09/PredictiveEquityCurveDrawdownRecoveryTimeCfs'));
+const StrategyCorrelationAnalysisToAvoidRedundancyCfs = React.lazy(() => import('./pages/Batch09/StrategyCorrelationAnalysisToAvoidRedundancyCfs'));
+const WalkForwardAnalysisAutomationCfs = React.lazy(() => import('./pages/Batch09/WalkForwardAnalysisAutomationCfs'));
+const TradeJournalNlpLessonExtractionCfs = React.lazy(() => import('./pages/Batch09/TradeJournalNlpLessonExtractionCfs'));
+const BrokerIntegrationForLiveTradingAlpacaAlreadyPartialCfs = React.lazy(() => import('./pages/Batch09/BrokerIntegrationForLiveTradingAlpacaAlreadyPartialCfs'));
+const RealTimeStrategyMonitoringWithAnomalyAlertsCfs = React.lazy(() => import('./pages/Batch09/RealTimeStrategyMonitoringWithAnomalyAlertsCfs'));
+const CommunityStrategyMarketplaceWithPerformanceFilteringCfs = React.lazy(() => import('./pages/Batch09/CommunityStrategyMarketplaceWithPerformanceFilteringCfs'));
+const RegulatoryReportingAutomationCfs = React.lazy(() => import('./pages/Batch09/RegulatoryReportingAutomationCfs'));
+const AiWalkForwardCurveFittingDetectorGapAi = React.lazy(() => import('./pages/Batch09/AiWalkForwardCurveFittingDetectorGapAi'));
+const AiTradeJournalLessonExtractorGapAi = React.lazy(() => import('./pages/Batch09/AiTradeJournalLessonExtractorGapAi'));
+const AiPortfolioRiskAttributionBeyondReportGenerationGapAi = React.lazy(() => import('./pages/Batch09/AiPortfolioRiskAttributionBeyondReportGenerationGapAi'));
+const TaxLotWashSaleTrackingGapNon = React.lazy(() => import('./pages/Batch09/TaxLotWashSaleTrackingGapNon'));
+const RegulatoryComplianceFinraMifidReportingGapNon = React.lazy(() => import('./pages/Batch09/RegulatoryComplianceFinraMifidReportingGapNon'));
+const MultiAccountAllocationPmmStyleGapNon = React.lazy(() => import('./pages/Batch09/MultiAccountAllocationPmmStyleGapNon'));
+const StrategyMarketplaceWithMonetizationGapNon = React.lazy(() => import('./pages/Batch09/StrategyMarketplaceWithMonetizationGapNon'));
+const KycamlWorkflowForPaidUsersGapNon = React.lazy(() => import('./pages/Batch09/KycamlWorkflowForPaidUsersGapNon'));
+
 const Dashboard         = lazy(() => import('./pages/Dashboard'));
 const TrailingStops     = lazy(() => import('./pages/TrailingStops'));
 const CopyTrades        = lazy(() => import('./pages/CopyTrades'));
@@ -54,6 +72,7 @@ const HyperoptAdvancedPage = lazy(() => import('./pages/HyperoptAdvanced'));
 const OrderflowPage = lazy(() => import('./pages/Orderflow'));
 const RlLitePage = lazy(() => import('./pages/RlLite'));
 const FreqaiSidecarPage = lazy(() => import('./pages/FreqaiSidecar'));
+const StrategyAbPage    = lazy(() => import('./pages/StrategyAb'));
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
@@ -125,7 +144,27 @@ export default function App() {
             <Route path="/orderflow" element={<ProtectedRoute><OrderflowPage /></ProtectedRoute>} />
             <Route path="/rl-lite" element={<ProtectedRoute><RlLitePage /></ProtectedRoute>} />
             <Route path="/freqai-sidecar" element={<ProtectedRoute><FreqaiSidecarPage /></ProtectedRoute>} />
-          </Routes>
+            <Route path="/strategy-ab" element={<ProtectedRoute><StrategyAbPage /></ProtectedRoute>} />
+          
+      {/* // === Batch 09 Gaps & Frontend Mounts === */}
+        <Route path="/batch09/cfs/predictive-equity-curve-drawdown-recovery-time" element={<React.Suspense fallback={<div>Loading...</div>}><PredictiveEquityCurveDrawdownRecoveryTimeCfs /></React.Suspense>} />
+        <Route path="/batch09/cfs/strategy-correlation-analysis-to-avoid-redundancy" element={<React.Suspense fallback={<div>Loading...</div>}><StrategyCorrelationAnalysisToAvoidRedundancyCfs /></React.Suspense>} />
+        <Route path="/batch09/cfs/walk-forward-analysis-automation" element={<React.Suspense fallback={<div>Loading...</div>}><WalkForwardAnalysisAutomationCfs /></React.Suspense>} />
+        <Route path="/batch09/cfs/trade-journal-nlp-lesson-extraction" element={<React.Suspense fallback={<div>Loading...</div>}><TradeJournalNlpLessonExtractionCfs /></React.Suspense>} />
+        <Route path="/batch09/cfs/broker-integration-for-live-trading-alpaca-already-partial" element={<React.Suspense fallback={<div>Loading...</div>}><BrokerIntegrationForLiveTradingAlpacaAlreadyPartialCfs /></React.Suspense>} />
+        <Route path="/batch09/cfs/real-time-strategy-monitoring-with-anomaly-alerts" element={<React.Suspense fallback={<div>Loading...</div>}><RealTimeStrategyMonitoringWithAnomalyAlertsCfs /></React.Suspense>} />
+        <Route path="/batch09/cfs/community-strategy-marketplace-with-performance-filtering" element={<React.Suspense fallback={<div>Loading...</div>}><CommunityStrategyMarketplaceWithPerformanceFilteringCfs /></React.Suspense>} />
+        <Route path="/batch09/cfs/regulatory-reporting-automation" element={<React.Suspense fallback={<div>Loading...</div>}><RegulatoryReportingAutomationCfs /></React.Suspense>} />
+        <Route path="/batch09/gap-ai/ai-walk-forward-curve-fitting-detector" element={<React.Suspense fallback={<div>Loading...</div>}><AiWalkForwardCurveFittingDetectorGapAi /></React.Suspense>} />
+        <Route path="/batch09/gap-ai/ai-trade-journal-lesson-extractor" element={<React.Suspense fallback={<div>Loading...</div>}><AiTradeJournalLessonExtractorGapAi /></React.Suspense>} />
+        <Route path="/batch09/gap-ai/ai-portfolio-risk-attribution-beyond-report-generation" element={<React.Suspense fallback={<div>Loading...</div>}><AiPortfolioRiskAttributionBeyondReportGenerationGapAi /></React.Suspense>} />
+        <Route path="/batch09/gap-nonai/tax-lot-wash-sale-tracking" element={<React.Suspense fallback={<div>Loading...</div>}><TaxLotWashSaleTrackingGapNon /></React.Suspense>} />
+        <Route path="/batch09/gap-nonai/regulatory-compliance-finra-mifid-reporting" element={<React.Suspense fallback={<div>Loading...</div>}><RegulatoryComplianceFinraMifidReportingGapNon /></React.Suspense>} />
+        <Route path="/batch09/gap-nonai/multi-account-allocation-pmm-style" element={<React.Suspense fallback={<div>Loading...</div>}><MultiAccountAllocationPmmStyleGapNon /></React.Suspense>} />
+        <Route path="/batch09/gap-nonai/strategy-marketplace-with-monetization" element={<React.Suspense fallback={<div>Loading...</div>}><StrategyMarketplaceWithMonetizationGapNon /></React.Suspense>} />
+        <Route path="/batch09/gap-nonai/kycaml-workflow-for-paid-users" element={<React.Suspense fallback={<div>Loading...</div>}><KycamlWorkflowForPaidUsersGapNon /></React.Suspense>} />
+
+      </Routes>
         </Suspense>
       </main>
     </div>

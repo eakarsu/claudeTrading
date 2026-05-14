@@ -109,6 +109,9 @@ export const TradeJournal = sequelize.define('TradeJournal', {
   notes: { type: DataTypes.TEXT },
   strategy: { type: DataTypes.STRING },
   aiAnalysis: { type: DataTypes.TEXT },
+  // Structured AI results — model + usage + parsed fields. Use JSONB so we can
+  // index specific keys (e.g. ai_results->>'critique_score') if needed.
+  aiResults: { type: DataTypes.JSONB, defaultValue: {} },
 }, userScopedOpts());
 
 // ─── Price Alerts ───
@@ -536,6 +539,40 @@ export const QTable = sequelize.define('QTable', {
   indexes: [{ fields: ['userId'] }, { fields: ['userId', 'name'], unique: true }],
 });
 
+// ─── Strategy A/B Harness ───
+// Run two strategies in parallel against the same symbol set in shadow mode.
+// Each StrategyAbRun owns config + a stream of StrategyAbTrade rows for both
+// strategies — UI compares realized vs theoretical P&L side by side.
+export const StrategyAbRun = sequelize.define('StrategyAbRun', {
+  userId:      { type: DataTypes.INTEGER, allowNull: false },
+  name:        { type: DataTypes.STRING, allowNull: false },
+  strategyA:   { type: DataTypes.STRING, allowNull: false },
+  strategyB:   { type: DataTypes.STRING, allowNull: false },
+  symbols:     { type: DataTypes.JSON,   defaultValue: [] },
+  config:      { type: DataTypes.JSON,   defaultValue: {} },
+  status:      { type: DataTypes.STRING, defaultValue: 'idle' }, // idle|running|stopped|completed
+  startedAt:   { type: DataTypes.DATE },
+  stoppedAt:   { type: DataTypes.DATE },
+  // Realized stats per side — { trades, pnl, winRate, sharpe } for A and B.
+  results:     { type: DataTypes.JSONB,  defaultValue: {} },
+  aiResults:   { type: DataTypes.JSONB,  defaultValue: {} },
+}, {
+  indexes: [{ fields: ['userId'] }, { fields: ['userId', 'name'], unique: true }],
+});
+
+export const StrategyAbTrade = sequelize.define('StrategyAbTrade', {
+  runId:       { type: DataTypes.INTEGER, allowNull: false },
+  side:        { type: DataTypes.STRING, allowNull: false }, // 'A' or 'B'
+  symbol:      { type: DataTypes.STRING, allowNull: false },
+  action:      { type: DataTypes.STRING, allowNull: false }, // buy|sell
+  qty:         { type: DataTypes.FLOAT },
+  price:       { type: DataTypes.FLOAT },
+  pnl:         { type: DataTypes.FLOAT, defaultValue: 0 },
+  tradeAt:     { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+}, {
+  indexes: [{ fields: ['runId'] }, { fields: ['runId', 'side'] }],
+});
+
 // ─── Telegram Config (per-user bot token + authorized chat ID) ───
 export const TelegramConfig = sequelize.define('TelegramConfig', {
   userId:    { type: DataTypes.INTEGER, allowNull: false, unique: true },
@@ -561,4 +598,5 @@ export default {
   TelegramConfig,
   AiModel, SavedBacktest, ProducedSignal,
   UserStrategy,
+  StrategyAbRun, StrategyAbTrade,
 };

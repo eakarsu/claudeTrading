@@ -4,9 +4,10 @@ import { logger } from '../logger.js';
 import { AiUsage } from '../models/index.js';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5';
+// Standardized cross-project model — overridable via env for cost tuning.
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022';
 const DAILY_TOKEN_LIMIT = parseInt(process.env.AI_DAILY_TOKEN_LIMIT || '100000', 10);
 
 function hasOpenRouter() {
@@ -137,11 +138,13 @@ async function callAnthropic(prompt, context) {
 
 export async function askAI(prompt, context = '', { userId } = {}) {
   if (!hasOpenRouter() && !hasAnthropic()) {
-    return {
-      content: 'No AI provider configured. Add OPENROUTER_API_KEY or ANTHROPIC_API_KEY to your .env file.',
-      model: null,
-      usage: null,
-    };
+    // Fix: previously returned a soft string the UI had to detect. Now throw an
+    // UpstreamError so the central errorHandler returns a proper 503 with a
+    // machine-readable code AI_NOT_CONFIGURED.
+    throw new UpstreamError(
+      'No AI provider configured. Add OPENROUTER_API_KEY or ANTHROPIC_API_KEY to your .env file.',
+      { code: 'AI_NOT_CONFIGURED' },
+    );
   }
 
   await checkDailyBudget(userId);

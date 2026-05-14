@@ -1,13 +1,14 @@
 import './env.js';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 import sequelize from './db.js';
 import { logger } from './logger.js';
 import { authMiddleware, pruneRevokedTokens } from './middleware/auth.js';
-import { authLimiter, aiLimiter } from './middleware/rateLimit.js';
+import { authLimiter, aiLimiter, aiHourlyLimiter } from './middleware/rateLimit.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { securityHeaders } from './middleware/securityHeaders.js';
 import {
@@ -18,6 +19,7 @@ import {
 
 import authRoutes from './routes/auth.js';
 import aiRoutes from './routes/ai.js';
+import customFeaturesRoutes from './routes/customFeatures.js';
 import alpacaRoutes from './routes/alpaca.js';
 import autoTraderRoutes from './routes/autoTrader.js';
 import backtestRoutes from './routes/backtest.js';
@@ -60,9 +62,14 @@ import orderflowRoutes from './routes/orderflow.js';
 import rlLiteRoutes from './routes/rlLite.js';
 import jupyterRoutes from './routes/jupyter.js';
 import freqaiSidecarRoutes from './routes/freqaiSidecar.js';
+import optionsRoutes from './routes/options.js';
+import leaderboardRoutes from './routes/leaderboard.js';
+import aiStrategyRoutes from './routes/aiStrategy.js';
+import strategyAbRoutes from './routes/strategyAb.js';
 
 import { resourcePrompts } from './prompts/resourceAnalysis.js';
 import { resumeAutoTraderIfRunning, stopAllAutoTraders } from './services/autoTrader.js';
+import { closeRedis } from './services/redisCache.js';
 import { startAlertEvaluator, stopAlertEvaluator } from './services/alertEvaluator.js';
 import { startDocsScheduler, stopDocsScheduler } from './services/docsScheduler.js';
 import { resumeTelegramLoops } from './services/telegramBot.js';
@@ -91,6 +98,13 @@ app.use(cors({
 
 // Security headers for every response (static + API). Mounted after CORS so
 // preflight responses still get the Access-Control-* pair.
+// helmet covers HSTS/X-Content-Type-Options/X-Frame-Options/etc.
+// We disable contentSecurityPolicy here because the SPA dev server (Vite)
+// uses inline scripts; CSP should be added at the reverse proxy in prod.
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(securityHeaders);
 
 app.use(express.json({ limit: '100kb' }));
@@ -116,15 +130,22 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api', authMiddleware);
 
 // AI rate limit on any endpoint whose path implies AI cost.
+// Two layers: a per-minute burst limiter (aiLimiter) plus a per-hour
+// budget (aiHourlyLimiter, 20/hr per user) that protects against
+// pathological loops chewing through tokens overnight.
 app.use('/api', (req, res, next) => {
   if (/\/analyze$/.test(req.path) || /\/ai\/ask$/.test(req.path) || req.path.startsWith('/ai/')) {
-    return aiLimiter(req, res, next);
+    return aiLimiter(req, res, (err) => {
+      if (err) return next(err);
+      return aiHourlyLimiter(req, res, next);
+    });
   }
   next();
 });
 
 app.use('/api/chart', chartDataRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/custom', customFeaturesRoutes);
 app.use('/api/alpaca', alpacaRoutes);
 app.use('/api/auto-trader', autoTraderRoutes);
 app.use('/api/backtest', backtestRoutes);
@@ -163,6 +184,10 @@ app.use('/api/orderflow', orderflowRoutes);
 app.use('/api/rl-lite', rlLiteRoutes);
 app.use('/api/jupyter', jupyterRoutes);
 app.use('/api/freqai-sidecar', freqaiSidecarRoutes);
+app.use('/api/options', optionsRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/ai/generate-strategy', aiStrategyRoutes);
+app.use('/api/strategy-ab', strategyAbRoutes);
 
 // ─── CRUD + AI-analyze routers ───
 const crudResources = [
@@ -204,6 +229,10 @@ app.get('*', (req, res) => {
 });
 
 // ─── Error handler (must be last) ───
+// // === Batch 09 Gaps & Frontend Mounts ===
+app.use('/api/gap-ai-claudetrading', require('./routes/batch09GapAi')); // // === Batch 09 Gaps & Frontend Mounts ===
+app.use('/api/gap-nonai-claudetrading', require('./routes/batch09GapNonai')); // // === Batch 09 Gaps & Frontend Mounts ===
+
 app.use(errorHandler);
 
 let httpServer = null;
@@ -266,6 +295,7 @@ async function shutdown(signal) {
     stopAlertEvaluator();
     stopDocsScheduler();
     await stopAllAutoTraders().catch((err) => logger.warn({ err }, 'stopAllAutoTraders during shutdown failed'));
+    await closeRedis().catch((err) => logger.warn({ err }, 'closeRedis during shutdown failed'));
     if (httpServer) {
       await new Promise((resolve) => httpServer.close(resolve));
     }
@@ -282,3 +312,5 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 start();
+
+

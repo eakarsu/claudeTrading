@@ -196,11 +196,33 @@ export const comboBacktest = (symbol, strategies, days = 365, timeframe, opts = 
   request('/backtest/combo', { method: 'POST', body: JSON.stringify({ symbol, strategies, days, timeframe, ...opts }) });
 export const comboBacktestMulti = (symbols, strategies, days = 365, timeframe, opts = {}) =>
   request('/backtest/combo-multi', { method: 'POST', body: JSON.stringify({ symbols, strategies, days, timeframe, ...opts }) });
-export const startAutoTrader = (strategy, symbols, config = {}) =>
-  request('/auto-trader/start', { method: 'POST', body: JSON.stringify({ strategy, symbols, config }) });
+export const startAutoTrader = (strategy, symbols, config = {}, confirmLive = false) =>
+  request('/auto-trader/start', { method: 'POST', body: JSON.stringify({ strategy, symbols, config, confirmLive }) });
 export const stopAutoTrader = () =>
   request('/auto-trader/stop', { method: 'POST' });
 export const getAutoTraderStatus = () => request('/auto-trader/status');
+export const getAutoTraderMode = () => request('/auto-trader/mode');
+
+// Strategy A/B Harness — shadow-mode comparison of two strategies.
+export const listStrategyAbRuns = ({ limit = 50, offset = 0 } = {}) => {
+  const qs = new URLSearchParams({ limit, offset });
+  return request(`/strategy-ab?${qs}`);
+};
+export const createStrategyAbRun = (data) =>
+  request('/strategy-ab', { method: 'POST', body: JSON.stringify(data) });
+export const getStrategyAbRun = (id) => request(`/strategy-ab/${id}`);
+export const listStrategyAbTrades = (id, { limit = 100, offset = 0 } = {}) => {
+  const qs = new URLSearchParams({ limit, offset });
+  return request(`/strategy-ab/${id}/trades?${qs}`);
+};
+export const startStrategyAbRun = (id) =>
+  request(`/strategy-ab/${id}/start`, { method: 'POST' });
+export const stopStrategyAbRun = (id) =>
+  request(`/strategy-ab/${id}/stop`, { method: 'POST' });
+export const critiqueStrategyAbRun = (id) =>
+  request(`/strategy-ab/${id}/critique`, { method: 'POST' });
+export const deleteStrategyAbRun = (id) =>
+  request(`/strategy-ab/${id}`, { method: 'DELETE' });
 export const updateAutoTraderTradeTags = (id, tags) =>
   request(`/auto-trader/trades/${id}/tags`, { method: 'PATCH', body: JSON.stringify({ tags }) });
 export const journalAutoTraderTrade = (id) =>

@@ -95,9 +95,22 @@ export function createCrudRouter(Model, name, aiPromptFn) {
     if (!item) throw new NotFoundError(`${name} not found`);
     const prompt = aiPromptFn(item.toJSON());
     const result = await askAI(prompt, '', { userId: req.userId });
-    await item.update(isScoped
-      ? { aiAnalysis: result.content, userId: req.userId }
-      : { aiAnalysis: result.content });
+    // Persist both the legacy `aiAnalysis` text column AND a structured
+    // `aiResults` JSONB blob (model + usage + timestamp) when the model has
+    // that column. This is the "ai_results JSONB" cross-project pattern.
+    const hasAiResults = Object.prototype.hasOwnProperty.call(Model.rawAttributes, 'aiResults');
+    const update = isScoped ? { aiAnalysis: result.content, userId: req.userId }
+                            : { aiAnalysis: result.content };
+    if (hasAiResults) {
+      update.aiResults = {
+        ...(item.aiResults || {}),
+        analysis: result.content,
+        model: result.model,
+        usage: result.usage,
+        generatedAt: new Date().toISOString(),
+      };
+    }
+    await item.update(update);
     res.json({ analysis: result.content, model: result.model, usage: result.usage });
   }));
 

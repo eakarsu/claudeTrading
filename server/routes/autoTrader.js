@@ -9,6 +9,7 @@ import {
   startAutoTrader,
   stopAutoTrader,
   getAutoTraderStatus,
+  TRADING_MODE,
 } from '../services/autoTrader.js';
 import { AutoTraderTrade, TradeJournal } from '../models/index.js';
 import { NotFoundError } from '../errors.js';
@@ -28,7 +29,15 @@ router.post(
   validate({ body: autoTraderStartSchema }),
   audit('auto-trader.start', 'auto-trader', { captureBody: true }),
   asyncHandler(async (req, res) => {
-    const { strategy, symbols, config } = req.body;
+    const { strategy, symbols, config, confirmLive } = req.body;
+    // Live-mode guardrail — refuse to start unless caller explicitly confirms.
+    // Closes the audit "no paper-vs-live trading guardrail visible" gap.
+    if (TRADING_MODE === 'live' && confirmLive !== true) {
+      return res.status(400).json({
+        error: 'LIVE_MODE_CONFIRMATION_REQUIRED',
+        message: 'Server is in LIVE trading mode. Re-submit with confirmLive: true to acknowledge real orders will be placed.',
+      });
+    }
     res.json(await startAutoTrader(req.userId, strategy, symbols, config));
   }),
 );
@@ -43,6 +52,23 @@ router.post(
 
 router.get('/status', asyncHandler(async (req, res) => {
   res.json(await getAutoTraderStatus(req.userId));
+}));
+
+/**
+ * GET /api/auto-trader/mode
+ * Returns whether the server is in paper or live trading mode (env-controlled).
+ * UI surfaces this with a banner so a user can never confuse a paper run with
+ * a live one. Closes the audit gap "no paper-vs-live trading guardrail visible".
+ */
+router.get('/mode', asyncHandler(async (req, res) => {
+  res.json({
+    mode: TRADING_MODE,
+    isLive: TRADING_MODE === 'live',
+    confirmRequired: TRADING_MODE === 'live',
+    warning: TRADING_MODE === 'live'
+      ? 'LIVE TRADING — orders will be sent to a real Alpaca account.'
+      : 'Paper trading — no real orders will be sent.',
+  });
 }));
 
 /**
