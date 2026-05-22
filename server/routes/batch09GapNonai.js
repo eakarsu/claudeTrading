@@ -1,7 +1,7 @@
 // // === Batch 09 Gaps & Frontend Mounts ===
 // Auto-generated gap-nonai endpoints for claudeTrading.
 // Calls OpenRouter via native fetch (no SDK); lazily creates gap_features table.
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5';
@@ -30,7 +30,7 @@ let _persistInit = false;
 async function persist(feature, input, output) {
   // Lazy gap_features table — best-effort, swallow errors so AI still works.
   try {
-    const { PrismaClient } = require('@prisma/client');
+    const { PrismaClient } = await import('@prisma/client');
     const p = new PrismaClient();
     if (!_persistInit) {
       await p.$executeRawUnsafe('CREATE TABLE IF NOT EXISTS gap_features (id SERIAL PRIMARY KEY, feature TEXT, input JSONB, output JSONB, created_at TIMESTAMPTZ DEFAULT NOW())');
@@ -105,4 +105,4 @@ router.post('/kycaml-workflow-for-paid-users', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

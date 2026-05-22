@@ -23,6 +23,7 @@ const links = [
   { to: '/alpaca-trading', icon: FiDollarSign, label: 'Alpaca Trading' },
   { to: '/strategy-lab', icon: FiTarget, label: 'Strategy Lab' },
   { to: '/strategy-ab', icon: FiGitBranch, label: 'Strategy A/B' },
+  { to: '/slippage-attribution', icon: FiActivity, label: 'Slippage Attribution' },
   { to: '/strategy-editor', icon: FiCode, label: 'Strategy Editor' },
   { to: '/leverage', icon: FiTrendingUp, label: 'Leverage' },
   { to: '/hyperopt', icon: FiSliders, label: 'Hyperopt' },

@@ -66,6 +66,9 @@ import optionsRoutes from './routes/options.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 import aiStrategyRoutes from './routes/aiStrategy.js';
 import strategyAbRoutes from './routes/strategyAb.js';
+import batch09GapAiRoutes from './routes/batch09GapAi.js';
+import batch09GapNonaiRoutes from './routes/batch09GapNonai.js';
+import slippageAttributionRoutes from './routes/slippageAttribution.js';
 
 import { resourcePrompts } from './prompts/resourceAnalysis.js';
 import { resumeAutoTraderIfRunning, stopAllAutoTraders } from './services/autoTrader.js';
@@ -188,6 +191,7 @@ app.use('/api/options', optionsRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/ai/generate-strategy', aiStrategyRoutes);
 app.use('/api/strategy-ab', strategyAbRoutes);
+app.use('/api/slippage-attribution', slippageAttributionRoutes);
 
 // ─── CRUD + AI-analyze routers ───
 const crudResources = [
@@ -230,8 +234,8 @@ app.get('*', (req, res) => {
 
 // ─── Error handler (must be last) ───
 // // === Batch 09 Gaps & Frontend Mounts ===
-app.use('/api/gap-ai-claudetrading', require('./routes/batch09GapAi')); // // === Batch 09 Gaps & Frontend Mounts ===
-app.use('/api/gap-nonai-claudetrading', require('./routes/batch09GapNonai')); // // === Batch 09 Gaps & Frontend Mounts ===
+app.use('/api/gap-ai-claudetrading', batch09GapAiRoutes);
+app.use('/api/gap-nonai-claudetrading', batch09GapNonaiRoutes); // // === Batch 09 Gaps & Frontend Mounts ===
 
 app.use(errorHandler);
 
@@ -312,5 +316,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 start();
-
 

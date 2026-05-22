@@ -9,6 +9,11 @@ import DemoBanner from './components/DemoBanner';
 // pages) are only downloaded when the user opens them.
 import Login from './pages/Login';
 
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
+import TimelineView from './pages/TimelineView';
+
 // // === Batch 09 Gaps & Frontend Mounts ===
 const PredictiveEquityCurveDrawdownRecoveryTimeCfs = React.lazy(() => import('./pages/Batch09/PredictiveEquityCurveDrawdownRecoveryTimeCfs'));
 const StrategyCorrelationAnalysisToAvoidRedundancyCfs = React.lazy(() => import('./pages/Batch09/StrategyCorrelationAnalysisToAvoidRedundancyCfs'));
@@ -73,6 +78,7 @@ const OrderflowPage = lazy(() => import('./pages/Orderflow'));
 const RlLitePage = lazy(() => import('./pages/RlLite'));
 const FreqaiSidecarPage = lazy(() => import('./pages/FreqaiSidecar'));
 const StrategyAbPage    = lazy(() => import('./pages/StrategyAb'));
+const SlippageAttributionPage = lazy(() => import('./pages/SlippageAttribution'));
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
@@ -94,6 +100,10 @@ export default function App() {
         {!isLogin && <DemoBanner />}
         <Suspense fallback={<PageFallback />}>
           <Routes>
+        <Route path="/insights/timeline" element={<ProtectedRoute><TimelineView /></ProtectedRoute>} />
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/trailing-stops" element={<ProtectedRoute><TrailingStops /></ProtectedRoute>} />
@@ -145,6 +155,7 @@ export default function App() {
             <Route path="/rl-lite" element={<ProtectedRoute><RlLitePage /></ProtectedRoute>} />
             <Route path="/freqai-sidecar" element={<ProtectedRoute><FreqaiSidecarPage /></ProtectedRoute>} />
             <Route path="/strategy-ab" element={<ProtectedRoute><StrategyAbPage /></ProtectedRoute>} />
+            <Route path="/slippage-attribution" element={<ProtectedRoute><SlippageAttributionPage /></ProtectedRoute>} />
           
       {/* // === Batch 09 Gaps & Frontend Mounts === */}
         <Route path="/batch09/cfs/predictive-equity-curve-drawdown-recovery-time" element={<React.Suspense fallback={<div>Loading...</div>}><PredictiveEquityCurveDrawdownRecoveryTimeCfs /></React.Suspense>} />
