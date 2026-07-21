@@ -61,8 +61,6 @@ export default function StrategyLab() {
   const [autoSkipDates, setAutoSkipDates] = useState('');
   // Per-symbol JSON overrides (merged into base config in the service).
   const [autoPerSymbolText, setAutoPerSymbolText] = useState('');
-  // Live-mode confirmation — required when the server runs with ALPACA_LIVE_TRADING=true.
-  const [autoLiveAck, setAutoLiveAck] = useState(false);
   // Cost / validation for backtests
   const [costSlippageBps, setCostSlippageBps] = useState('');   // basis points
   const [costCommission, setCostCommission] = useState('');    // $ per side
@@ -280,17 +278,7 @@ export default function StrategyLab() {
       }
     }
 
-    // Live mode: only forward the ack when the user explicitly ticks the box,
-    // and only after status confirms the server is in live mode.
-    if (autoStatus?.mode === 'live') {
-      if (!autoLiveAck) {
-        setError('LIVE trading is enabled on the server. Tick "I acknowledge LIVE trading" to proceed.');
-        return;
-      }
-      config.modeAcknowledged = 'live';
-    } else {
-      config.modeAcknowledged = 'paper';
-    }
+    config.modeAcknowledged = 'paper';
 
     try {
       await startAutoTrader(autoStrategy, syms, config);
@@ -1032,25 +1020,14 @@ export default function StrategyLab() {
                     value={autoPerSymbolText}
                     onChange={e => setAutoPerSymbolText(e.target.value)} />
                 </div>
-                {autoStatus?.mode === 'live' && (
-                  <div className="lab-field" style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ color: '#fecaca' }}>
-                      <input type="checkbox" checked={autoLiveAck}
-                        onChange={e => setAutoLiveAck(e.target.checked)} />
-                      {' '}I acknowledge this will place LIVE orders with real money.
-                    </label>
-                  </div>
-                )}
                 <button
                   className="btn btn-primary"
                   onClick={handleStartAuto}
-                  disabled={!autoStrategy || (autoStatus?.mode === 'live' && !autoLiveAck)}
+                  disabled={!autoStrategy}
                   title={
                     !autoStrategy
                       ? 'Pick a strategy above to enable'
-                      : (autoStatus?.mode === 'live' && !autoLiveAck)
-                        ? 'Confirm the live-trading acknowledgement to enable'
-                        : 'Start auto-trader with current config'
+                      : 'Start paper-only auto-trader with current config'
                   }
                 >
                   <FiPlay size={14} /> Start Auto Trader

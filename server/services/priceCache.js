@@ -42,10 +42,13 @@ export async function getLatestTradePrices(symbols, { maxAgeMs } = {}) {
     const redisPrices = await getCachedPrices(symbols);
     const hitCount = Object.keys(redisPrices).length;
     if (hitCount === symbols.length) {
+      const normalized = Object.fromEntries(
+        Object.entries(redisPrices).map(([symbol, price]) => [symbol, { p: price }]),
+      );
       // Full hit — populate the local cache too so the circuit breaker logic
       // stays consistent, then return.
-      cache = { at: Date.now(), data: new Map(Object.entries(redisPrices)), key };
-      return redisPrices;
+      cache = { at: Date.now(), data: new Map(Object.entries(normalized)), key };
+      return normalized;
     }
     // Partial hit — use what we have as stale data but still fetch upstream
     // for the missing symbols. Fall through to the existing logic below.

@@ -4,11 +4,9 @@
  * Safety rails: idempotent orders (client_order_id), daily-loss kill switch,
  * consecutive-loss kill switch, max open positions, max position size.
  *
- * Multi-user: each user owns a distinct AutoTraderState row (unique userId)
- * and its own polling interval. Trade history is scoped by userId too.
- * Note: Alpaca positions/orders are shared at the broker-account level —
- * true per-user broker isolation would require per-user API keys. For paper
- * mode, sharing is acceptable; we just make sure local bookkeeping is clean.
+ * Multi-user: each user owns a distinct AutoTraderState row, polling interval,
+ * encrypted paper-broker connection, durable order ledger, and reconciliation
+ * boundary. The unattended loop cannot route live orders.
  */
 
 import crypto from 'node:crypto';
@@ -28,11 +26,11 @@ import { kellyFractionForUser, correlationMultiplier } from './positionSizing.js
 import { checkProtections } from './protections.js';
 import { getEdge, edgeMultiplier } from './edge.js';
 import { sendTelegramMessage } from './telegramBot.js';
+import { executeGovernedOrder, getBrokerContext } from './brokerGovernance.js';
 
-// Global mode flag — 'paper' is the default. Setting env ALPACA_LIVE_TRADING=true
-// flips us to live, which the /start route must ALSO confirm explicitly.
-export const TRADING_MODE =
-  (process.env.ALPACA_LIVE_TRADING === 'true') ? 'live' : 'paper';
+// The unattended loop is intentionally paper-only. Live execution has its own
+// re-authenticated, dual-approved gateway and cannot be enabled by an env typo.
+export const TRADING_MODE = 'paper';
 
 // Tighter cache for intraday ticks — older quotes lead to misfills.
 const PRICE_CACHE_TTL_BY_TF = {
@@ -185,12 +183,10 @@ async function killSwitchTriggered(state) {
  * faster than the dailyPnl updater can catch up).
  *
  * `account` is the Alpaca GET /v2/account response; `positions` the
- * GET /v2/positions array. Either can be null/empty — we treat missing
- * data as "can't evaluate", NOT "trip the switch". That keeps a transient
- * Alpaca outage from auto-stopping a trader whose guardrails are fine.
+ * GET /v2/positions array. Unknown risk state is always a hard stop.
  */
 export function exposureKillSwitch(cfg, account, positions) {
-  if (!Array.isArray(positions)) return null;
+  if (!account || !Array.isArray(positions)) return 'Risk state unavailable; trading stopped fail-closed';
 
   const shortPositions = positions.filter((p) => Number(p.qty) < 0);
   const shortExposure = shortPositions.reduce(
@@ -212,9 +208,12 @@ export function exposureKillSwitch(cfg, account, positions) {
     return `Short positions (${shortPositions.length}) exceed cap ${cfg.maxShortPositions}`;
   }
 
-  if (cfg.stopOnDrawdownPct && account?.equity && account?.last_equity) {
+  if (cfg.stopOnDrawdownPct) {
     const eq = Number(account.equity);
     const base = Number(account.last_equity);
+    if (!Number.isFinite(eq) || !Number.isFinite(base) || base <= 0) {
+      return 'Account equity data unavailable; trading stopped fail-closed';
+    }
     if (base > 0 && Number.isFinite(eq)) {
       const dd = eq / base - 1; // negative when down
       if (dd < -Math.abs(cfg.stopOnDrawdownPct)) {
@@ -273,15 +272,14 @@ function minutesSinceOpen(clockData) {
 /**
  * Flatten every open position at market. Called when EOD close-out fires.
  * Cancels open orders first so bracket legs don't conflict with the market exit.
- * NOTE: At broker level this flattens ALL open positions on the shared paper
- * account — not just this user's entries. In a paper context that's acceptable
- * because concurrent multi-user live-trading on one account is not supported.
+ * The broker connection is unique to this user/account/environment, so this
+ * cannot flatten another user's positions.
  */
-async function flattenAll(state, positions, reason = 'EOD flatten') {
-  try { await alpaca.cancelAllOrders(); } catch (err) { logger.warn({ err }, 'cancelAllOrders failed'); }
+async function flattenAll(state, positions, reason = 'EOD flatten', broker = alpaca) {
+  try { await broker.cancelAllOrders(); } catch (err) { logger.warn({ err }, 'cancelAllOrders failed'); }
   for (const pos of positions) {
     try {
-      const closed = await alpaca.closePosition(pos.symbol);
+      const closed = await broker.closePosition(pos.symbol);
       const qty = Math.abs(Number.parseInt(pos.qty, 10)) || 0;
       const price = Number.parseFloat(pos.current_price);
       await AutoTraderTrade.create({
@@ -317,11 +315,11 @@ async function flattenAll(state, positions, reason = 'EOD flatten') {
  * Lets the broker track the high-water mark and exit when price pulls back
  * by trailingStopPct.
  */
-async function reconcileTrailingStops(cfg, positions) {
+async function reconcileTrailingStops(state, cfg, positions, brokerContext) {
   if (!cfg.useTrailingStop) return;
   let openOrders = [];
   try {
-    openOrders = await alpaca.getOrders('open', 100);
+    openOrders = await brokerContext.client.getOrders('open', 100);
   } catch (err) {
     logger.warn({ err }, 'reconcileTrailingStops: getOrders failed');
     return;
@@ -335,15 +333,13 @@ async function reconcileTrailingStops(cfg, positions) {
     if (qty <= 0) continue;
     const trailPct = (cfg.trailingStopPct || 0.02) * 100;
     try {
-      await alpaca.placeTrailingStop({
-        symbol: pos.symbol,
-        qty,
-        side: 'sell',
-        trailPercent: trailPct,
+      await executeGovernedOrder(state.userId, 'paper', {
+        symbol: pos.symbol, qty, side: 'sell', type: 'trailing_stop',
+        time_in_force: 'gtc', trail_percent: trailPct,
         client_order_id: crypto.createHash('sha1')
-          .update(`${pos.symbol}:trail:${new Date().toISOString().slice(0, 10)}`)
+          .update(`${state.userId}:${pos.symbol}:trail:${new Date().toISOString().slice(0, 10)}`)
           .digest('hex').slice(0, 32),
-      });
+      }, { context: brokerContext });
       logger.info({ symbol: pos.symbol, trailPct }, 'Placed trailing stop');
     } catch (err) {
       logger.warn({ err, symbol: pos.symbol }, 'placeTrailingStop failed');
@@ -356,7 +352,7 @@ async function reconcileTrailingStops(cfg, positions) {
  * Scoped to this user's open buys — a sibling user's bracket fill must not
  * be recorded against this user's P&L counters.
  */
-async function reconcileBracketFills(state, positions) {
+async function reconcileBracketFills(state, positions, broker = alpaca) {
   const userId = state.userId ?? null;
   const openSymbols = new Set(positions.map((p) => p.symbol));
   const openBuys = await AutoTraderTrade.findAll({
@@ -387,7 +383,7 @@ async function reconcileBracketFills(state, positions) {
   let closedOrders = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      closedOrders = await alpaca.getOrders('closed', 100);
+      closedOrders = await broker.getOrders('closed', 100);
       break;
     } catch (err) {
       if (attempt === 1) {
@@ -472,6 +468,15 @@ async function tickInner(userId) {
   const state = await loadState(userId);
   if (!state.running || !state.activeStrategy || !state.symbols?.length) return;
 
+  let brokerContext;
+  try {
+    brokerContext = await getBrokerContext(userId, 'paper');
+  } catch (error) {
+    await fireKillSwitch(state, userId, `Paper broker connection unavailable: ${error.message}`);
+    return;
+  }
+  const broker = brokerContext.client;
+
   const reason = await killSwitchTriggered(state);
   if (reason) {
     await fireKillSwitch(state, userId, reason);
@@ -480,9 +485,9 @@ async function tickInner(userId) {
 
   let clockData;
   try {
-    clockData = await alpaca.getClock();
+    clockData = await broker.getClock();
   } catch (err) {
-    logger.warn({ err }, 'tick: getClock failed');
+    await fireKillSwitch(state, userId, `Broker clock unavailable: ${err.message}`);
     return;
   }
   const cfg = { ...DEFAULT_CONFIG, ...state.config };
@@ -498,19 +503,21 @@ async function tickInner(userId) {
 
   let positions = [];
   try {
-    positions = await alpaca.getPositions();
+    positions = await broker.getPositions();
   } catch (err) {
-    logger.warn({ err }, 'tick: getPositions failed');
-    positions = [];
+    await fireKillSwitch(state, userId, `Broker positions unavailable: ${err.message}`);
+    return;
   }
   const positionSymbols = positions.map((p) => p.symbol);
 
   // Live exposure / drawdown guardrails. Runs every tick on fresh broker
   // data so a strategy that opens positions faster than dailyPnl updates
-  // still hits the brakes. Account fetch is best-effort — drawdown check
-  // is skipped if unavailable, but exposure caps still apply.
+  // still hits the brakes. Missing account data is a hard stop.
   let account = null;
-  try { account = await alpaca.getAccount(); } catch (_) { /* degrade, don't trip */ }
+  try { account = await broker.getAccount(); } catch (error) {
+    await fireKillSwitch(state, userId, `Broker account unavailable: ${error.message}`);
+    return;
+  }
   const exposureReason = exposureKillSwitch(cfg, account, positions);
   if (exposureReason) {
     await fireKillSwitch(state, userId, exposureReason);
@@ -518,7 +525,7 @@ async function tickInner(userId) {
   }
 
   if (cfg.useBracketOrders !== false) {
-    await reconcileBracketFills(state, positions).catch((err) =>
+    await reconcileBracketFills(state, positions, broker).catch((err) =>
       logger.warn({ err }, 'Bracket reconcile error'),
     );
   }
@@ -527,7 +534,7 @@ async function tickInner(userId) {
   if (cfg.flattenOnClose && minsToClose != null && minsToClose <= (cfg.flattenBeforeCloseMin || 5)) {
     if (positions.length) {
       logger.info({ userId, minsToClose, count: positions.length }, 'EOD flatten triggered');
-      await flattenAll(state, positions, `EOD flatten (${minsToClose}m to close)`);
+      await flattenAll(state, positions, `EOD flatten (${minsToClose}m to close)`, broker);
     }
     return;
   }
@@ -546,7 +553,7 @@ async function tickInner(userId) {
   const today = new Date().toISOString().slice(0, 10);
   const inSkipDate = Array.isArray(cfg.skipDates) && cfg.skipDates.includes(today);
 
-  await reconcileTrailingStops(cfg, positions).catch((err) =>
+  await reconcileTrailingStops(state, cfg, positions, brokerContext).catch((err) =>
     logger.warn({ err }, 'Trailing stop reconcile error'),
   );
 
@@ -572,7 +579,7 @@ async function tickInner(userId) {
         }
       }
 
-      const bars = await alpaca.getBars(symbol, timeframe, 200);
+      const bars = await broker.getBars(symbol, timeframe, 200);
       if (bars.length < 50) continue;
 
       const signals = runStrategy(state.activeStrategy, bars);
@@ -719,7 +726,8 @@ async function tickInner(userId) {
           order = { id: `dry-${clientOrderId}` };
         } else {
           try {
-            order = await alpaca.placeOrder(orderParams);
+            const result = await executeGovernedOrder(userId, 'paper', orderParams, { context: brokerContext });
+            order = { id: result.order.brokerOrderId || result.order.clientOrderId };
           } catch (err) {
             logger.warn({ err, userId, symbol, useBracket }, 'Auto-trader buy order failed');
             continue;
@@ -789,10 +797,11 @@ async function tickInner(userId) {
           order = { id: `dry-${clientOrderId}` };
         } else {
           try {
-            order = await alpaca.placeOrder({
+            const result = await executeGovernedOrder(userId, 'paper', {
               symbol, qty, side: 'sell', type: 'market', time_in_force: 'day',
               client_order_id: clientOrderId,
-            });
+            }, { context: brokerContext });
+            order = { id: result.order.brokerOrderId || result.order.clientOrderId };
           } catch (err) {
             logger.warn({ err, userId, symbol }, 'Auto-trader sell order failed');
             continue;
@@ -855,16 +864,15 @@ async function tickInner(userId) {
 export async function startAutoTrader(userId, strategyKey, symbols, config = {}) {
   if (!STRATEGIES[strategyKey]) throw new BadRequestError(`Unknown strategy: ${strategyKey}`);
 
+  // Resolve before setting running=true so a missing connection cannot leave a
+  // restart-resumable zombie strategy behind.
+  await getBrokerContext(userId, 'paper');
+
   const state = await loadState(userId);
   const mergedConfig = { ...DEFAULT_CONFIG, ...state.config, ...config };
 
-  if (TRADING_MODE === 'live' && mergedConfig.modeAcknowledged !== 'live') {
-    throw new BadRequestError(
-      'Server is in LIVE trading mode. Re-send config.modeAcknowledged=\'live\' to confirm.',
-    );
-  }
   if (TRADING_MODE === 'paper' && mergedConfig.modeAcknowledged === 'live') {
-    throw new BadRequestError('Server is paper-only. Set ALPACA_LIVE_TRADING=true to enable live.');
+    throw new BadRequestError('The automated strategy runner is paper-only; use governed live-order activation instead.');
   }
   await state.update({
     running: true,
@@ -967,7 +975,8 @@ export async function getAutoTraderStatus(userId) {
   let unrealizedPnl = 0;
   let positionsCount = 0;
   try {
-    const positions = await alpaca.getPositions();
+    const { client } = await getBrokerContext(userId, 'paper');
+    const positions = await client.getPositions();
     positionsCount = positions.length;
     unrealizedPnl = positions.reduce((s, p) => s + (parseFloat(p.unrealized_pl) || 0), 0);
   } catch (_) { /* account not configured */ }

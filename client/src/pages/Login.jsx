@@ -47,11 +47,6 @@ export default function Login() {
     setLoading(false);
   };
 
-  const fillDemo = () => {
-    setEmail('trader@claude.ai');
-    setPassword('trading123');
-  };
-
   return (
     <div className="login-page">
       <div className="login-card">
@@ -100,11 +95,6 @@ export default function Login() {
               Cancel
             </button>
           </form>
-        )}
-        {!challenge && (
-          <button className="btn btn-demo" onClick={fillDemo}>
-            Fill Demo Credentials
-          </button>
         )}
       </div>
     </div>

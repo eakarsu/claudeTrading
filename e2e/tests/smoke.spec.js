@@ -7,14 +7,14 @@ import { test, expect, request as pwRequest } from '@playwright/test';
  * before a user opens the app.
  *
  * Assumes:
- *   - Server is running on BASE_URL with the demo user seeded
- *     (email=trader@claude.ai, password=trading123 — see server/seed.js).
+ *   - Server is running on BASE_URL with an explicitly provisioned user.
  *   - The prod build of the client is served by Express at BASE_URL, OR
  *     the Vite dev server proxies /api to the backend.
  */
 
-const DEMO_EMAIL    = process.env.E2E_EMAIL    || 'trader@claude.ai';
-const DEMO_PASSWORD = process.env.E2E_PASSWORD || 'trading123';
+const DEMO_EMAIL = process.env.E2E_EMAIL;
+const DEMO_PASSWORD = process.env.E2E_PASSWORD;
+if (!DEMO_EMAIL || !DEMO_PASSWORD) throw new Error('E2E_EMAIL and E2E_PASSWORD are required');
 
 test.describe('smoke', () => {
   test('health endpoint returns ok without auth', async ({ baseURL }) => {

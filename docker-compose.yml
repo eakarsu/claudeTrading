@@ -47,8 +47,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       ALPACA_API_KEY: ${ALPACA_API_KEY:-}
       ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
-      ALPACA_BASE_URL: ${ALPACA_BASE_URL:-https://paper-api.alpaca.markets}
-      ALPACA_LIVE_TRADING: ${ALPACA_LIVE_TRADING:-false}
+      # Required to store user-scoped broker credentials. Generate with:
+      # openssl rand -base64 32
+      BROKER_CREDENTIALS_KEY: ${BROKER_CREDENTIALS_KEY:?BROKER_CREDENTIALS_KEY is required}
+      BROKER_CREDENTIALS_KEY_VERSION: ${BROKER_CREDENTIALS_KEY_VERSION:-v1}
+      LIVE_TRADING_ENABLED: ${LIVE_TRADING_ENABLED:-false}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       RESEND_FROM: ${RESEND_FROM:-}

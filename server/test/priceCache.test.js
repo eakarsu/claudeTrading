@@ -16,6 +16,10 @@ process.env.PRICE_CACHE_BREAKER_COOLDOWN_MS = '50';
 async function loadModule(getLatestTradesImpl) {
   vi.resetModules();
   vi.doMock('../services/alpaca.js', () => ({ getLatestTrades: getLatestTradesImpl }));
+  vi.doMock('../services/redisCache.js', () => ({
+    getCachedPrices: vi.fn(async () => ({})),
+    setCachedPrices: vi.fn(async () => {}),
+  }));
   const mod = await import('../services/priceCache.js');
   return mod.getLatestTradePrices;
 }

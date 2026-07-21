@@ -21,6 +21,7 @@ const links = [
   { to: '/market-news', icon: FiRss, label: 'Market News' },
   { to: '/signal-charts', icon: FiActivity, label: 'Signal Charts' },
   { to: '/alpaca-trading', icon: FiDollarSign, label: 'Alpaca Trading' },
+  { to: '/broker-governance', icon: FiShield, label: 'Broker Governance' },
   { to: '/strategy-lab', icon: FiTarget, label: 'Strategy Lab' },
   { to: '/strategy-ab', icon: FiGitBranch, label: 'Strategy A/B' },
   { to: '/slippage-attribution', icon: FiActivity, label: 'Slippage Attribution' },

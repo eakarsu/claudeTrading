@@ -11,6 +11,13 @@ import {
 import { seedAiManifesto } from './data/aiManifesto.js';
 
 async function seed() {
+  if (process.env.DESTRUCTIVE_DEMO_SEED_ACKNOWLEDGEMENT !== 'replace-all-data-with-demo-fixtures') {
+    throw new Error('Set DESTRUCTIVE_DEMO_SEED_ACKNOWLEDGEMENT=replace-all-data-with-demo-fixtures to run the demo seed');
+  }
+  const demoPassword = process.env.DEMO_SEED_PASSWORD;
+  if (!demoPassword || demoPassword.length < 12) {
+    throw new Error('DEMO_SEED_PASSWORD of at least 12 characters is required');
+  }
   const reset = process.argv.includes('--reset');
   try {
     if (reset) {
@@ -31,7 +38,7 @@ async function seed() {
     }
 
     // ─── User ───
-    const hashedPw = await bcryptjs.hash('trading123', 10);
+    const hashedPw = await bcryptjs.hash(demoPassword, 12);
     await User.create({ email: 'trader@claude.ai', password: hashedPw, name: 'Demo Trader' });
 
     // ─── Trailing Stops (15) ───

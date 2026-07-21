@@ -81,16 +81,16 @@ describe('exposureKillSwitch', () => {
     expect(reason).toMatch(/-6\.00%/);
   });
 
-  it('does NOT trip drawdown when account data is missing', () => {
+  it('fails closed when account data is missing or invalid', () => {
     const cfg = { stopOnDrawdownPct: 0.05 };
-    expect(exposureKillSwitch(cfg, null, [])).toBeNull();
-    expect(exposureKillSwitch(cfg, { equity: undefined }, [])).toBeNull();
+    expect(exposureKillSwitch(cfg, null, [])).toMatch(/fail-closed/);
+    expect(exposureKillSwitch(cfg, { equity: undefined }, [])).toMatch(/unavailable/);
   });
 
-  it('does NOT trip any guardrail when positions is not an array', () => {
+  it('fails closed when positions are missing', () => {
     const cfg = { maxShortExposureDollars: 1, maxTotalExposureDollars: 1, maxShortPositions: 0 };
-    expect(exposureKillSwitch(cfg, emptyAccount, null)).toBeNull();
-    expect(exposureKillSwitch(cfg, emptyAccount, undefined)).toBeNull();
+    expect(exposureKillSwitch(cfg, emptyAccount, null)).toMatch(/fail-closed/);
+    expect(exposureKillSwitch(cfg, emptyAccount, undefined)).toMatch(/fail-closed/);
   });
 
   it('null/0 values disable the corresponding guardrail', () => {

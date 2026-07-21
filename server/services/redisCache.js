@@ -152,6 +152,7 @@ export async function getCachedPrices(symbols) {
       const keys = symbols.map((s) => `${KEY_PREFIX}${s}`);
       const vals = await client.mget(...keys);
       for (let i = 0; i < symbols.length; i++) {
+        if (vals[i] == null) continue;
         const n = Number(vals[i]);
         if (Number.isFinite(n)) result[symbols[i]] = n;
       }

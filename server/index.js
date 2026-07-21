@@ -69,6 +69,7 @@ import strategyAbRoutes from './routes/strategyAb.js';
 import batch09GapAiRoutes from './routes/batch09GapAi.js';
 import batch09GapNonaiRoutes from './routes/batch09GapNonai.js';
 import slippageAttributionRoutes from './routes/slippageAttribution.js';
+import brokerGovernanceRoutes from './routes/brokerGovernance.js';
 
 import { resourcePrompts } from './prompts/resourceAnalysis.js';
 import { resumeAutoTraderIfRunning, stopAllAutoTraders } from './services/autoTrader.js';
@@ -78,11 +79,15 @@ import { startDocsScheduler, stopDocsScheduler } from './services/docsScheduler.
 import { resumeTelegramLoops } from './services/telegramBot.js';
 import { pruneExpiredSessions } from './services/sessions.js';
 import { metricsMiddleware } from './services/metrics.js';
+import {
+  reconcileAllConnections, startReconciliationWorker, stopReconciliationWorker,
+} from './services/brokerGovernance.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
+const HOST = process.env.SERVER_HOST || '127.0.0.1';
 
 // ─── CORS ───
 const clientPort = process.env.CLIENT_PORT || 5173;
@@ -192,6 +197,7 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/ai/generate-strategy', aiStrategyRoutes);
 app.use('/api/strategy-ab', strategyAbRoutes);
 app.use('/api/slippage-attribution', slippageAttributionRoutes);
+app.use('/api/broker-governance', brokerGovernanceRoutes);
 
 // ─── CRUD + AI-analyze routers ───
 const crudResources = [
@@ -244,34 +250,29 @@ let httpServer = null;
 async function start() {
   try {
     await sequelize.authenticate();
-    await sequelize.sync();
     logger.info('Database connected');
-    httpServer = app.listen(PORT, () => {
-      logger.info({ port: PORT }, `Server running on http://localhost:${PORT}`);
+    httpServer = app.listen(PORT, HOST, () => {
+      logger.info({ host: HOST, port: PORT }, `Server running on http://${HOST}:${PORT}`);
     });
-    // Resume auto-trader if it was running before restart.
-    resumeAutoTraderIfRunning().catch((err) =>
-      logger.warn({ err }, 'Auto-trader resume failed'),
-    );
-    // Start the price-alert evaluator loop. Polls active PriceAlert rows,
-    // compares against current quotes, fires notifications on threshold
-    // crossings, and also expires stale TradeSignal rows in the same tick.
-    startAlertEvaluator();
-    // Resume Telegram long-poll loops for configured users.
-    resumeTelegramLoops().catch((err) =>
-      logger.warn({ err }, 'Telegram resume failed'),
-    );
-    // Docs mirror refresh loop — initial crawl on first boot, daily after.
-    startDocsScheduler();
-    // Prune expired token blocklist entries hourly. unref'd so the interval
-    // never holds the process open during shutdown.
-    pruneRevokedTokens().catch(() => {});
-    pruneExpiredSessions().catch(() => {});
-    const pruneTimer = setInterval(() => {
+    // Reconcile durable broker order state before any persisted strategy is
+    // allowed to resume after a process restart.
+    if (process.env.ENABLE_BACKGROUND_JOBS === 'true') {
+      await reconcileAllConnections();
+      startReconciliationWorker();
+      resumeAutoTraderIfRunning().catch((err) => logger.warn({ err }, 'auto-trader resume failed'));
+      startAlertEvaluator();
+      resumeTelegramLoops().catch((err) => logger.warn({ err }, 'Telegram resume failed'));
+      startDocsScheduler();
       pruneRevokedTokens().catch(() => {});
       pruneExpiredSessions().catch(() => {});
-    }, 60 * 60 * 1000);
-    pruneTimer.unref();
+      const pruneTimer = setInterval(() => {
+        pruneRevokedTokens().catch(() => {});
+        pruneExpiredSessions().catch(() => {});
+      }, 60 * 60 * 1000);
+      pruneTimer.unref();
+    } else {
+      logger.info('Background broker, trading, alert, Telegram, and documentation jobs are disabled');
+    }
   } catch (err) {
     logger.error({ err }, 'Failed to start');
     process.exit(1);
@@ -298,6 +299,7 @@ async function shutdown(signal) {
   try {
     stopAlertEvaluator();
     stopDocsScheduler();
+    stopReconciliationWorker();
     await stopAllAutoTraders().catch((err) => logger.warn({ err }, 'stopAllAutoTraders during shutdown failed'));
     await closeRedis().catch((err) => logger.warn({ err }, 'closeRedis during shutdown failed'));
     if (httpServer) {
@@ -316,4 +318,3 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 start();
-

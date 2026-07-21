@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "create-admin": "node scripts/provision-admin.js",
     "seed": "node seed.js",
     "seed:reset": "node seed.js --reset",
     "migrate": "node migrations/umzug.js up",
@@ -38,6 +39,12 @@
     "nodemon": "^3.1.0",
     "prettier": "^3.3.3",
     "supertest": "^7.0.0",
-    "vitest": "^2.1.4"
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "@rushstack/node-core-library": {
+      "ajv": "^8.18.0"
+    }
   }
 }
