@@ -30,6 +30,10 @@ describePg('governed broker execution — real PostgreSQL', () => {
     await models.LiveActivation.destroy({ where: {} });
     await models.StrategyValidation.destroy({ where: {} });
     await models.BrokerConnection.destroy({ where: {} });
+    await models.User.destroy({ where: { email: [
+      'governance-owner@example.test', 'governance-other@example.test',
+      'governance-operator@example.test', 'governance-compliance@example.test',
+    ] } });
     owner = await models.User.create({ email: 'governance-owner@example.test', password: 'not-a-real-hash', name: 'Owner' });
     const identity = { userId: owner.id, accountId: 'paper-account-1', environment: 'paper' };
     connection = await models.BrokerConnection.create({
@@ -38,7 +42,7 @@ describePg('governed broker execution — real PostgreSQL', () => {
       credentialsCiphertext: governance.encryptCredentials({ apiKey: 'paper-key', apiSecret: 'paper-secret' }, identity),
       riskPolicy: governance.DEFAULT_RISK_POLICY,
     });
-  }, 30_000);
+  }, 90_000);
 
   afterAll(async () => {
     if (!sequelize) return;

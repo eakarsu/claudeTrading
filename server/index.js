@@ -70,6 +70,7 @@ import batch09GapAiRoutes from './routes/batch09GapAi.js';
 import batch09GapNonaiRoutes from './routes/batch09GapNonai.js';
 import slippageAttributionRoutes from './routes/slippageAttribution.js';
 import brokerGovernanceRoutes from './routes/brokerGovernance.js';
+import applicationAiRoutes from './routes/applicationAi.js';
 
 import { resourcePrompts } from './prompts/resourceAnalysis.js';
 import { resumeAutoTraderIfRunning, stopAllAutoTraders } from './services/autoTrader.js';
@@ -153,6 +154,7 @@ app.use('/api', (req, res, next) => {
 
 app.use('/api/chart', chartDataRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/application-ai', applicationAiRoutes);
 app.use('/api/custom', customFeaturesRoutes);
 app.use('/api/alpaca', alpacaRoutes);
 app.use('/api/auto-trader', autoTraderRoutes);

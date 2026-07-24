@@ -236,6 +236,16 @@ export const AiUsage = sequelize.define('AiUsage', {
   indexes: [{ fields: ['userId', 'day'] }],
 });
 
+export const RuntimeAiResult = sequelize.define('RuntimeAiResult', {
+  userId: { type: DataTypes.INTEGER, allowNull: false },
+  prompt: { type: DataTypes.TEXT, allowNull: false },
+  model: { type: DataTypes.STRING, allowNull: false },
+  provider: { type: DataTypes.STRING, allowNull: false },
+  providerReceipt: { type: DataTypes.STRING, allowNull: false },
+  result: { type: DataTypes.TEXT, allowNull: false },
+  usage: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+}, { indexes: [{ fields: ['userId', 'createdAt'] }] });
+
 // ─── Auto-Trader State (persisted so restarts don't lose in-progress runs) ───
 export const AutoTraderState = sequelize.define('AutoTraderState', {
   // userId is the unique key now — each user owns at most one state row.
@@ -710,7 +720,7 @@ export default {
   User, TrailingStop, CopyTrade, WheelStrategy, WatchlistItem,
   TradeJournal, PriceAlert, TradeSignal, StockScreener,
   RiskAssessment, PortfolioItem, Sentiment, OptionsChain, MarketNews,
-  AiUsage, AutoTraderState, AutoTraderTrade, EventCalendar, AuditLog,
+  AiUsage, RuntimeAiResult, AutoTraderState, AutoTraderTrade, EventCalendar, AuditLog,
   BrokerConnection, LiveActivation, StrategyValidation, BrokerOrder,
   BrokerOrderEvent, ReconciliationRun, KillSwitchDrill,
   RevokedToken, PasswordResetToken, Notification, Session,

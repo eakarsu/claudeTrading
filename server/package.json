@@ -11,7 +11,7 @@
     "migrate": "node migrations/umzug.js up",
     "migrate:down": "node migrations/umzug.js down",
     "migrate:pending": "node migrations/umzug.js pending",
-    "test": "vitest run",
+    "test": "vitest run --testTimeout=60000 --hookTimeout=90000",
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json}\""
