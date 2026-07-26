@@ -66,6 +66,15 @@ export default function Login() {
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required />
             </div>
             {error && <div className="error-msg">{error}</div>}
+            <button
+              type="button"
+              onClick={() => { setEmail(import.meta.env.VITE_DEMO_EMAIL || ''); setPassword(import.meta.env.VITE_DEMO_PASSWORD || ''); }}
+              disabled={!import.meta.env.VITE_DEMO_EMAIL || !import.meta.env.VITE_DEMO_PASSWORD}
+              aria-label="Auto Fill Demo Credentials"
+              style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
+            >
+              Auto Fill Demo Credentials
+            </button>
             <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
               <FiLogIn size={18} /> {loading ? 'Signing in...' : 'Sign In'}
             </button>
