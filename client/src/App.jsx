@@ -48,6 +48,7 @@ const OptionsChainPage  = lazy(() => import('./pages/OptionsChain'));
 const MarketNewsPage    = lazy(() => import('./pages/MarketNews'));
 const AICenter          = lazy(() => import('./pages/AICenter'));
 const AlpacaTrading     = lazy(() => import('./pages/AlpacaTrading'));
+const BrokerGovernance  = lazy(() => import('./pages/BrokerGovernance'));
 const SignalCharts      = lazy(() => import('./pages/SignalCharts'));
 const StrategyLab       = lazy(() => import('./pages/StrategyLab'));
 const EventCalendarPage = lazy(() => import('./pages/EventCalendar'));
@@ -121,6 +122,7 @@ export default function App() {
             <Route path="/market-news" element={<ProtectedRoute><MarketNewsPage /></ProtectedRoute>} />
             <Route path="/signal-charts" element={<ProtectedRoute><SignalCharts /></ProtectedRoute>} />
             <Route path="/alpaca-trading" element={<ProtectedRoute><AlpacaTrading /></ProtectedRoute>} />
+            <Route path="/broker-governance" element={<ProtectedRoute><BrokerGovernance /></ProtectedRoute>} />
             {/* Legacy alias — notifications emitted by autoTrader.js/seed.js
                 point at `/auto-trader`. Redirect so old rows still resolve
                 to the real page (AlpacaTrading houses the auto-trader UI). */}

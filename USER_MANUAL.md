@@ -35,15 +35,12 @@ now also kills nodemon's child `node` process, not just nodemon itself.
 | `--reseed` | Force `node seed.js --reset` (drops all seed rows and re-inserts). Use this after pulling a migration that added a column the seed populates — e.g. the 0006 `MarketNews.url` column. Without this flag, `seed.js` is a no-op when any user exists, so normal restarts preserve your local data. |
 | `-h`, `--help` | Print usage and exit. |
 
-### 1.2 Demo login
+### 1.2 Initial login
 
-After seeding, a single demo user is available:
-
-- Email: `trader@claude.ai`
-- Password: `trading123`
-
-Override with `E2E_EMAIL` / `E2E_PASSWORD` when seeding your own account
-or change the password from **Account → Security** after logging in.
+Provision the first administrator with `npm --prefix server run create-admin` and
+the documented `PROVISION_ADMIN_*` environment variables. The repository does
+not ship a login password. Set `E2E_EMAIL` and `E2E_PASSWORD` to that account
+when running the browser smoke suite.
 
 The seeded demo user ships with a handful of sample rows so the UI
 isn't blank on first login: an active auto-trader config, ~20 past
@@ -596,13 +593,13 @@ whose target is already satisfied — the evaluator will fire within 30 s.
 
 | Symptom                                                  | Fix                                                                                                   |
 |----------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| `./start.sh` fails on seed with `column "userId" does not exist` | DB predates the per-user migration. Drop and recreate: `dropdb claude_trading && createdb claude_trading`, then re-run `./start.sh`. |
-| `Seed error: relation "..._user_id" already exists`      | Sequelize index-name collision. Recreate the DB as above; the model factory now prevents recurrence. |
-| Port already in use / `EADDRINUSE :::3001`                | Re-run `./start.sh` — it kills the previous instance's full process tree via its pidfile (`.start.pid`). If that fails (e.g. pidfile pointing at a reused PID), run `lsof -ti:3001 \| xargs kill -9` (and 5173) manually. |
+| `./start.sh` reports a pending migration error | Back up the database, run `cd server && node migrations/umzug.js pending`, and resolve the named additive migration. Do not drop a production database. |
+| Seed data is required on a new local database | Run `./start.sh --seed`. Resetting demo data is destructive and requires the explicit `--reseed` flag. |
+| Port already in use / `EADDRINUSE :::3001`                | Identify the owner with `lsof -i :3001`. The startup script intentionally refuses to kill unknown processes; stop the owner explicitly or choose different ports. |
 | `Sync rate limit exceeded` 429 on Market News / earnings sync | You hit the per-user limit (10 syncs / 5 min). The ceiling protects the shared Finnhub/earnings-provider API key. Wait the `Retry-After` header's worth of seconds.        |
 | Alpaca ECONNRESET spam from alert evaluator              | Check `GET /api/health/alpaca`. Returns `{reason:"no_keys"}` if `.env` is missing keys, `{reason:"network"}` if Alpaca is unreachable (firewall/VPN), `{reason:"auth_or_upstream"}` otherwise. Set `ALERT_POLL_INTERVAL_MS=0` in `.env` to disable the evaluator while debugging. |
 | Login returns 401                                         | Wrong password or 2FA code. Reset seed: `node server/seed.js --reset`.                                |
-| Alpaca endpoints 403                                      | Missing `ALPACA_API_KEY` / `ALPACA_API_SECRET` in `.env`. Paper-API keys work fine.                    |
+| Alpaca endpoints report no active connection              | Open **Broker Governance**, configure the authenticated user's paper account, and verify the returned account ID. |
 | AI endpoints 429                                          | Daily Claude budget exceeded. Raise the cap in AI Center or wait for UTC midnight.                     |
 | Frontend loads but all data is empty                      | Backend unreachable. Check http://localhost:3001/api/health and server log output.                    |
 | Login returns 429 "Too many login attempts"               | IP-based rate limit (10 / 15 min). Wait the suggested number of minutes or restart the server to clear the in-process counter. |
@@ -624,9 +621,10 @@ See `DEPLOY.md` for the full list. The essentials for local dev:
 |-------------------------|-------------------------------------------------|
 | `DATABASE_URL`          | Postgres connection string                      |
 | `JWT_SECRET`            | JWT signing key (required — set anything long) |
-| `ALPACA_API_KEY/SECRET` | Paper-brokerage keys                            |
-| `ALPACA_ENDPOINT`       | Override the Alpaca base URL (default paper endpoint) |
-| `ALPACA_LIVE_TRADING`   | `true` flips `TRADING_MODE=live`. `/auto-trader/start` will refuse unless the config explicitly acknowledges `modeAcknowledged: 'live'`. |
+| `ALPACA_API_KEY/SECRET` | Optional legacy paper market-data keys; user order credentials are configured in Broker Governance |
+| `BROKER_CREDENTIALS_KEY` | Base64-encoded 32-byte encryption key for user broker credential envelopes |
+| `LIVE_TRADING_ENABLED`  | Deployment-level live kill gate; defaults to `false` and never bypasses re-authentication, reconciliation, validation, disclosure, or dual approval |
+| `BROKER_RECONCILIATION_INTERVAL_MS` | Durable account reconciliation interval (minimum 15 s, default 60 s) |
 | `OPENROUTER_API_KEY`    | Primary AI provider. If set, the AI Center routes through OpenRouter |
 | `OPENROUTER_MODEL`      | Model slug passed to OpenRouter (e.g. `anthropic/claude-haiku-4.5`) |
 | `ANTHROPIC_API_KEY`     | Optional fallback. Used when OpenRouter isn't configured, or when an OpenRouter call fails upstream |
@@ -661,9 +659,9 @@ See `DEPLOY.md` for the full list. The essentials for local dev:
 
 ## 18. Safety notes
 
-- The app only calls **Alpaca paper** endpoints. No live trading wiring is
-  present. To point at live, swap base URLs in `server/services/alpaca.js`
-  and re-read the live-trading checklist in `DEPLOY.md` first.
+- The unattended strategy loop is permanently **paper-only**. The separate
+  live gateway is disabled by default and fails closed unless every control in
+  `docs/LIVE_TRADING_RUNBOOK.md` is current.
 - AI spend is capped per-user per-day by the AI Center guardrail. Rate-limit
   headers are surfaced in the UI.
 - Secrets are never logged; audit-log `meta` scrubs tokens/passwords before
@@ -736,11 +734,11 @@ the endpoint rejects every request.
 ## 21. FAQ
 
 **Does any of this touch real money?**
-Only if you explicitly opt in. The default `TRADING_MODE` is `paper` and
-hits Alpaca's paper endpoint. Setting `ALPACA_LIVE_TRADING=true` flips the
-mode, but `/auto-trader/start` additionally requires
-`config.modeAcknowledged: 'live'` or it throws a 400. See
-`autoTrader.js:699-706`.
+The auto-trader never touches real money: it is hard-bound to the authenticated
+user's paper connection. A manual live gateway exists for a controlled pilot,
+but remains closed unless the deployment gate, current 2FA re-authentication,
+fresh reconciliation, passed validation, versioned disclosure, broker-limit
+attestation, and two distinct approvals all pass.
 
 **Will a dry-run simulation trip the kill switch?**
 No. Dry-run sells are excluded from `dailyPnl` / `consecutiveLosses`
@@ -790,7 +788,7 @@ works.
 | Dry run              | Strategy executes end-to-end but `alpaca.placeOrder` is skipped; fills get synthetic `dry-`-prefixed IDs, `[DRY]` notification titles, and `\| DRY RUN` appended to the trade reason. P&L still counts toward kill switches. |
 | Entry-context snapshot | Indicator values frozen at the moment of a fill, persisted with the `AutoTraderTrade` row for Trade Replay. |
 | Kill switch          | Automatic self-stop when `consecutiveLosses` ≥ `maxConsecutiveLosses` or `dailyPnl` ≤ `-dailyLossLimit`. Writes `killedReason` and a `security` notification. Counters reset on every `/auto-trader/start`. |
-| Modes                | `TRADING_MODE` is `paper` unless `ALPACA_LIVE_TRADING=true`. Even in live mode, `/auto-trader/start` requires an explicit `modeAcknowledged: 'live'` in the config. |
+| Modes                | The auto-trader is always paper-only. Governed manual orders declare `paper` or `live`; live has independent deployment and workflow gates. |
 | Per-symbol override  | `config.perSymbol.<SYMBOL>.<field>` merges into strategy config for that symbol only; root values still apply to the rest of the universe. |
 | Revocation blocklist | Hybrid in-memory (60 s TTL) + DB-backed (`RevokedToken`) set of JWT hashes that are rejected even when cryptographically valid. Populated on logout and session revoke; pruned hourly. |
 | Session row          | DB record stamped on successful login (user-agent, IP, `lastSeenAt`, token expiry). `lastSeenAt` is throttled to update at most once every 60 s. Drives the **Active sessions** UI and per-device revoke. |

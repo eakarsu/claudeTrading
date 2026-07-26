@@ -4,6 +4,7 @@ import { logger } from '../logger.js';
 import { AiUsage } from '../models/index.js';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL;
 // Standardized cross-project model — overridable via env for cost tuning.
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -60,9 +61,12 @@ async function checkDailyBudget(userId) {
  * upstream failures. Callers pass the authenticated userId so we can track cost.
  */
 async function callOpenRouter(prompt, context) {
+  if (OPENROUTER_BASE_URL !== 'https://openrouter.ai/api/v1') {
+    throw new UpstreamError('OPENROUTER_BASE_URL must use the approved OpenRouter API base', { code: 'OPENROUTER_CONFIG' });
+  }
   let response;
   try {
-    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
@@ -90,8 +94,12 @@ async function callOpenRouter(prompt, context) {
     const message = data.error?.message || `OpenRouter error ${response.status}`;
     throw new UpstreamError(`AI Error: ${message}`, { code: 'OPENROUTER_ERROR' });
   }
-  const content = data.choices?.[0]?.message?.content || 'No response from AI';
-  return { content, model: data.model, usage: data.usage };
+  const content = data.choices?.[0]?.message?.content;
+  const providerReceipt = response.headers.get('x-request-id') || data.id;
+  if (typeof content !== 'string' || !content.trim() || !providerReceipt) {
+    throw new UpstreamError('OpenRouter returned an incomplete response', { code: 'OPENROUTER_INCOMPLETE' });
+  }
+  return { content, model: data.model, usage: data.usage, provider: 'openrouter', providerReceipt };
 }
 
 async function callAnthropic(prompt, context) {
@@ -124,7 +132,10 @@ async function callAnthropic(prompt, context) {
     const message = data.error?.message || `Anthropic error ${response.status}`;
     throw new UpstreamError(`AI Error: ${message}`, { code: 'ANTHROPIC_ERROR' });
   }
-  const content = data.content?.[0]?.text || 'No response from AI';
+  const content = data.content?.[0]?.text;
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new UpstreamError('Anthropic returned an incomplete response', { code: 'ANTHROPIC_INCOMPLETE' });
+  }
   // Normalise Anthropic's usage shape to the OpenAI-style keys we record.
   const usage = data.usage
     ? {
@@ -133,7 +144,7 @@ async function callAnthropic(prompt, context) {
         total_tokens: (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0),
       }
     : null;
-  return { content, model: data.model, usage };
+  return { content, model: data.model, usage, provider: 'anthropic', providerReceipt: data.id || null };
 }
 
 export async function askAI(prompt, context = '', { userId } = {}) {

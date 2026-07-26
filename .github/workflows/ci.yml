@@ -38,7 +38,10 @@ jobs:
       DB_USER: trading
       DB_PASSWORD: trading
       DB_NAME: trading_test
+      DATABASE_URL: postgres://trading:trading@localhost:5432/trading_test
+      TEST_DATABASE_URL: postgres://trading:trading@localhost:5432/trading_test
       JWT_SECRET: ci-only-not-a-real-secret
+      BROKER_CREDENTIALS_KEY: ERERERERERERERERERERERERERERERERERERERERERE=
       ALPACA_API_KEY: ci-dummy
       ALPACA_API_SECRET: ci-dummy
     steps:
@@ -57,6 +60,9 @@ jobs:
       - name: Test
         working-directory: server
         run: npm test
+      - name: Production dependency audit
+        working-directory: server
+        run: npm audit --omit=dev --audit-level=high
 
   client:
     name: Client — build
@@ -77,6 +83,9 @@ jobs:
       - name: Build
         working-directory: client
         run: npm run build
+      - name: Dependency audit
+        working-directory: client
+        run: npm audit --audit-level=high
 
   docker:
     name: Docker — image builds

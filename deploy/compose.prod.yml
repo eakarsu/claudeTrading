@@ -45,19 +45,22 @@ services:
     environment:
       NODE_ENV:          production
       SERVER_PORT:       3001
-      # The app reads DATABASE_URL (see server/db.js). Compose host is the
-      # service name "db" on the internal network.
-      DATABASE_URL:      postgres://${DB_USER:-trading}:${DB_PASSWORD}@db:5432/${DB_NAME:-trading}
+      DB_HOST:            db
+      DB_PORT:            5432
+      DB_USER:            ${DB_USER:-trading}
+      DB_PASSWORD:        ${DB_PASSWORD}
+      DB_NAME:            ${DB_NAME:-trading}
       JWT_SECRET:        ${JWT_SECRET:?JWT_SECRET required}
-      # Alpaca — note the server uses ALPACA_ENDPOINT (not ALPACA_BASE_URL).
-      # orderflow.js reads ALPACA_KEY_ID/ALPACA_SECRET_KEY; alpaca.js reads
-      # ALPACA_API_KEY/ALPACA_API_SECRET. Pass both naming pairs so both work.
+      # Optional legacy paper market-data credentials. User order credentials
+      # are configured per account in Broker Governance.
       ALPACA_API_KEY:    ${ALPACA_API_KEY:-}
       ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
       ALPACA_KEY_ID:     ${ALPACA_API_KEY:-}
       ALPACA_SECRET_KEY: ${ALPACA_API_SECRET:-}
-      ALPACA_ENDPOINT:   ${ALPACA_ENDPOINT:-https://paper-api.alpaca.markets}
-      ALPACA_LIVE_TRADING: ${ALPACA_LIVE_TRADING:-false}
+      BROKER_CREDENTIALS_KEY: ${BROKER_CREDENTIALS_KEY:?BROKER_CREDENTIALS_KEY required}
+      BROKER_CREDENTIALS_KEY_VERSION: ${BROKER_CREDENTIALS_KEY_VERSION:-v1}
+      LIVE_TRADING_ENABLED: ${LIVE_TRADING_ENABLED:-false}
+      BROKER_RECONCILIATION_INTERVAL_MS: ${BROKER_RECONCILIATION_INTERVAL_MS:-60000}
       # OpenRouter — the project uses OpenRouter (not the Anthropic API directly).
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL:   ${OPENROUTER_MODEL:-anthropic/claude-haiku-4.5}

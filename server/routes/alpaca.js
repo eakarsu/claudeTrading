@@ -3,21 +3,24 @@ import { asyncHandler } from '../middleware/async.js';
 import { validate } from '../middleware/validate.js';
 import { tradeLimiter } from '../middleware/rateLimit.js';
 import { audit } from '../middleware/audit.js';
-import * as alpaca from '../services/alpaca.js';
 import { orderSchema, ordersQuery, portfolioHistoryQuery } from '../schemas.js';
+import { executeGovernedOrder, getBrokerContext } from '../services/brokerGovernance.js';
 
 const router = Router();
 
 router.get('/account', asyncHandler(async (req, res) => {
-  res.json(await alpaca.getAccount());
+  const { client } = await getBrokerContext(req.userId, 'paper');
+  res.json(await client.getAccount());
 }));
 
 router.get('/positions', asyncHandler(async (req, res) => {
-  res.json(await alpaca.getPositions());
+  const { client } = await getBrokerContext(req.userId, 'paper');
+  res.json(await client.getPositions());
 }));
 
 router.get('/positions/:symbol', asyncHandler(async (req, res) => {
-  res.json(await alpaca.getPosition(req.params.symbol));
+  const { client } = await getBrokerContext(req.userId, 'paper');
+  res.json(await client.getPosition(req.params.symbol));
 }));
 
 router.post(
@@ -26,18 +29,20 @@ router.post(
   validate({ body: orderSchema }),
   audit('alpaca.order.place', 'order', { captureBody: true }),
   asyncHandler(async (req, res) => {
-    const result = await alpaca.placeOrder(req.body);
-    res.json(result);
+    const result = await executeGovernedOrder(req.userId, 'paper', req.body);
+    res.status(result.idempotentReplay ? 200 : 201).json(result);
   }),
 );
 
 router.get('/orders', validate({ query: ordersQuery }), asyncHandler(async (req, res) => {
   const { status, limit } = req.query;
-  res.json(await alpaca.getOrders(status, limit));
+  const { client } = await getBrokerContext(req.userId, 'paper');
+  res.json(await client.getOrders(status, limit));
 }));
 
 router.delete('/orders/:id', audit('alpaca.order.cancel', 'order'), asyncHandler(async (req, res) => {
-  await alpaca.cancelOrder(req.params.id);
+    const { client } = await getBrokerContext(req.userId, 'paper');
+    await client.cancelOrder(req.params.id);
   res.json({ success: true });
 }));
 
@@ -49,7 +54,8 @@ router.delete(
   tradeLimiter,
   audit('alpaca.positions.close-all', 'position'),
   asyncHandler(async (req, res) => {
-    const result = await alpaca.closeAllPositions();
+    const { client } = await getBrokerContext(req.userId, 'paper');
+    const result = await client.closeAllPositions();
     res.json(result);
   }),
 );
@@ -69,14 +75,15 @@ router.post(
   audit('alpaca.position.close-safely', 'position', { captureBody: true }),
   asyncHandler(async (req, res) => {
     const symbol = req.params.symbol.toUpperCase();
-    const openOrders = await alpaca.getOrders('open', 100).catch(() => []);
+    const { client } = await getBrokerContext(req.userId, 'paper');
+    const openOrders = await client.getOrders('open', 100).catch(() => []);
     const toCancel = (openOrders || []).filter((o) => o.symbol === symbol);
     const cancelled = [];
     for (const o of toCancel) {
-      try { await alpaca.cancelOrder(o.id); cancelled.push(o.id); }
+      try { await client.cancelOrder(o.id); cancelled.push(o.id); }
       catch (_) { /* ignore — order may have filled in the meantime */ }
     }
-    const closeResult = await alpaca.closePosition(symbol);
+    const closeResult = await client.closePosition(symbol);
     res.json({ cancelled, closeResult });
   }),
 );
@@ -86,13 +93,15 @@ router.delete(
   tradeLimiter,
   audit('alpaca.position.close', 'position'),
   asyncHandler(async (req, res) => {
-    const result = await alpaca.closePosition(req.params.symbol);
+    const { client } = await getBrokerContext(req.userId, 'paper');
+    const result = await client.closePosition(req.params.symbol);
     res.json(result);
   }),
 );
 
 router.get('/clock', asyncHandler(async (req, res) => {
-  res.json(await alpaca.getClock());
+  const { client } = await getBrokerContext(req.userId, 'paper');
+  res.json(await client.getClock());
 }));
 
 router.get(
@@ -100,7 +109,8 @@ router.get(
   validate({ query: portfolioHistoryQuery }),
   asyncHandler(async (req, res) => {
     const { period, timeframe } = req.query;
-    res.json(await alpaca.getPortfolioHistory(period, timeframe));
+    const { client } = await getBrokerContext(req.userId, 'paper');
+    res.json(await client.getPortfolioHistory(period, timeframe));
   }),
 );
 

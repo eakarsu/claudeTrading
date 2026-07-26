@@ -30,9 +30,11 @@ must be set explicitly** — the server refuses to start with an unset
 | `SERVER_PORT` | no (default `3001`) | Listen port inside the container. |
 | `CORS_ORIGIN` | yes in prod | Comma-separated list of allowed browser origins. |
 | `ALLOW_REGISTRATION` | no | Set to `false` in prod after your users sign up. |
-| `ALPACA_API_KEY` / `ALPACA_API_SECRET` | yes | Alpaca credentials. |
-| `ALPACA_BASE_URL` | no | `https://paper-api.alpaca.markets` (default) or `https://api.alpaca.markets`. |
-| `ALPACA_LIVE_TRADING` | no | Must be `true` AND the user must confirm `modeAcknowledged=live` before any live order is routed. |
+| `ALPACA_API_KEY` / `ALPACA_API_SECRET` | no | Legacy paper market-data credentials; order execution uses per-user connections. |
+| `BROKER_CREDENTIALS_KEY` | yes | Base64-encoded 32-byte AES-GCM key for broker credential envelopes. Generate with `openssl rand -base64 32`. |
+| `BROKER_CREDENTIALS_KEY_VERSION` | no | Key identifier recorded with connection envelopes (default `v1`). |
+| `LIVE_TRADING_ENABLED` | no | Deployment kill gate. Default and recommended value is `false`; it is never sufficient by itself to activate live orders. |
+| `BROKER_RECONCILIATION_INTERVAL_MS` | no | Durable broker-ledger reconciliation interval; minimum 15 seconds, default 60 seconds. |
 | `ANTHROPIC_API_KEY` | no | Enables AI analysis + chat endpoints. |
 | `RESEND_API_KEY` / `RESEND_FROM` | no | Enables transactional email (password reset, alerts). |
 | `TOTP_ISSUER` | no | Label shown in authenticator apps (default `claudeTrading`). |
@@ -55,8 +57,9 @@ Once the app logs `Server running on http://localhost:3001`, open
 
 ## 4. Database migrations
 
-The server calls `sequelize.sync()` on startup for dev ergonomics, but for
-production upgrades you should run migrations explicitly instead:
+The server applies pending additive Umzug migrations before model startup, then
+runs non-altering `sequelize.sync()` to support old development databases. For
+controlled production upgrades, run and inspect pending migrations explicitly:
 
 ```bash
 docker compose exec app node migrations/umzug.js up
@@ -143,21 +146,28 @@ The graceful-shutdown handler flushes in-flight auto-trader ticks before
 exiting, so a rolling restart won't orphan positions (but you should still
 check the status page after any restart).
 
-## 9. Enabling live trading
+## 9. Live-trading activation
 
-1. Set `ALPACA_LIVE_TRADING=true` and restart the app.
-2. Replace `ALPACA_BASE_URL` with the live URL.
-3. The auto-trader `/start` endpoint now requires `config.modeAcknowledged=live`
-   in the request body. Without it the endpoint returns 400 — the client UI
-   shows a confirmation checkbox that sets this.
-4. **Verify 2FA is enabled on every user account first.** An attacker with a
-   stolen session cookie can route real orders.
+The unattended auto-trader is permanently paper-only. Live orders can only use
+the governed order gateway. Follow [the live-trading runbook](docs/LIVE_TRADING_RUNBOOK.md):
+
+1. Complete jurisdiction-specific legal/compliance approval outside the app.
+2. Configure a distinct live account in Broker Governance; credentials are
+   encrypted and the account ID cannot be claimed by another user.
+3. Record broker-side limits, a passing strategy validation, the current risk
+   disclosure, current 2FA re-authentication, and a successful reconciliation.
+4. Obtain approvals from two different users: operator and compliance.
+5. Only then set `LIVE_TRADING_ENABLED=true` for the time-limited pilot.
+
+Any stale account/quote/reconciliation data, unknown broker order, failed
+reconciliation, or kill switch blocks submission.
 
 ## Limitations
 
-- Alpaca positions/orders are shared across all users of this deployment
-  because they live at the broker-account level. Multi-user isolation is at
-  the DB layer only. Use a separate Alpaca account per environment.
+- Legal authorization, licensed point-in-time data terms, KYC/AML applicability,
+  and jurisdiction-specific reporting require qualified external review.
+- The app enforces one owner for each broker account/environment and never
+  routes user orders through the legacy process-wide credential.
 - Rate limits are per-process; a multi-replica deploy needs a shared store
   (Redis) — not supplied here.
 - The notifier throttles per-process as well; replicas can each emit one

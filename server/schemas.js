@@ -277,7 +277,8 @@ export const autoTraderStartSchema = z.object({
       kellyFraction: z.number().positive().max(1).optional(),
       useCorrelationAdjust: z.boolean().optional(),
       correlationThreshold: z.number().min(0).max(1).optional(),
-      // Live-mode confirmation — required when the server runs with ALPACA_LIVE_TRADING=true.
+      // Compatibility field. The unattended runner rejects `live` and is
+      // permanently bound to governed paper connections.
       modeAcknowledged: z.enum(['paper', 'live']).optional(),
       // Dry run — execute the strategy loop without placing real orders.
       dryRun: z.boolean().optional(),

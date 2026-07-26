@@ -18,6 +18,20 @@ vi.mock('../services/priceCache.js', () => ({
   getLatestTradePrices: vi.fn(async () => ({})),
 }));
 
+vi.mock('../services/brokerGovernance.js', () => ({
+  getBrokerContext: vi.fn(async () => ({
+    connection: { id: 1, userId: 1, environment: 'paper', riskPolicy: {} },
+    client: {
+      getClock: vi.fn(async () => ({ is_open: true, next_close: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() })),
+      getPositions: vi.fn(async () => []),
+      getAccount: vi.fn(async () => ({ equity: 100000, last_equity: 100000, buying_power: 100000 })),
+      getOrders: vi.fn(async () => []),
+      getBars: vi.fn(async () => []),
+    },
+  })),
+  executeGovernedOrder: vi.fn(),
+}));
+
 vi.mock('../services/indicators.js', () => ({
   computeAll: vi.fn(() => ({ adx: [] })),
 }));

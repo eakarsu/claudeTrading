@@ -6,6 +6,9 @@ export const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
   password: { type: DataTypes.STRING, allowNull: false },
   name: { type: DataTypes.STRING, defaultValue: 'Trader' },
+  // Approval roles are deliberately assigned out-of-band. Registration and
+  // profile APIs never accept this field.
+  role: { type: DataTypes.ENUM('trader', 'operator', 'compliance', 'admin'), allowNull: false, defaultValue: 'trader' },
   // Optional TOTP 2FA. When totpEnabled=true, login returns a challenge and
   // must be followed by a /verify-totp call with the current code. The secret
   // is a base32-encoded 20-byte buffer shared with the authenticator app.
@@ -233,6 +236,16 @@ export const AiUsage = sequelize.define('AiUsage', {
   indexes: [{ fields: ['userId', 'day'] }],
 });
 
+export const RuntimeAiResult = sequelize.define('RuntimeAiResult', {
+  userId: { type: DataTypes.INTEGER, allowNull: false },
+  prompt: { type: DataTypes.TEXT, allowNull: false },
+  model: { type: DataTypes.STRING, allowNull: false },
+  provider: { type: DataTypes.STRING, allowNull: false },
+  providerReceipt: { type: DataTypes.STRING, allowNull: false },
+  result: { type: DataTypes.TEXT, allowNull: false },
+  usage: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+}, { indexes: [{ fields: ['userId', 'createdAt'] }] });
+
 // ─── Auto-Trader State (persisted so restarts don't lose in-progress runs) ───
 export const AutoTraderState = sequelize.define('AutoTraderState', {
   // userId is the unique key now — each user owns at most one state row.
@@ -270,6 +283,124 @@ export const AutoTraderTrade = sequelize.define('AutoTraderTrade', {
 }, {
   indexes: [{ fields: ['userId'] }],
 });
+
+// ─── Governed broker execution ───
+// Broker secrets are an authenticated-encryption envelope. API responses must
+// never return credentialsCiphertext; routes expose only the metadata fields.
+export const BrokerConnection = sequelize.define('BrokerConnection', {
+  userId: { type: DataTypes.INTEGER, allowNull: false },
+  broker: { type: DataTypes.STRING, allowNull: false, defaultValue: 'alpaca' },
+  accountId: { type: DataTypes.STRING, allowNull: false },
+  environment: { type: DataTypes.ENUM('paper', 'live'), allowNull: false },
+  credentialsCiphertext: { type: DataTypes.TEXT, allowNull: false },
+  credentialKeyVersion: { type: DataTypes.STRING, allowNull: false, defaultValue: 'v1' },
+  status: { type: DataTypes.ENUM('active', 'disabled', 'reauth_required'), allowNull: false, defaultValue: 'active' },
+  verifiedAt: { type: DataTypes.DATE, allowNull: false },
+  lastReauthenticatedAt: { type: DataTypes.DATE },
+  riskPolicy: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+  brokerLimitsVerifiedAt: { type: DataTypes.DATE },
+  killSwitchActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  killSwitchReason: { type: DataTypes.TEXT },
+  lastReconciledAt: { type: DataTypes.DATE },
+}, {
+  indexes: [
+    { fields: ['userId', 'environment'], unique: true },
+    { fields: ['broker', 'accountId', 'environment'], unique: true },
+  ],
+});
+
+export const LiveActivation = sequelize.define('LiveActivation', {
+  userId: { type: DataTypes.INTEGER, allowNull: false },
+  connectionId: { type: DataTypes.INTEGER, allowNull: false },
+  status: { type: DataTypes.ENUM('pending', 'approved', 'rejected', 'expired', 'revoked'), allowNull: false, defaultValue: 'pending' },
+  requestedBy: { type: DataTypes.INTEGER, allowNull: false },
+  operatorApprovedBy: { type: DataTypes.INTEGER },
+  complianceApprovedBy: { type: DataTypes.INTEGER },
+  operatorApprovedAt: { type: DataTypes.DATE },
+  complianceApprovedAt: { type: DataTypes.DATE },
+  disclosureVersion: { type: DataTypes.STRING, allowNull: false },
+  disclosureAcceptedAt: { type: DataTypes.DATE, allowNull: false },
+  strategyValidationId: { type: DataTypes.INTEGER, allowNull: false },
+  jurisdiction: { type: DataTypes.STRING, allowNull: false },
+  expiresAt: { type: DataTypes.DATE, allowNull: false },
+  decisionReason: { type: DataTypes.TEXT },
+}, { indexes: [{ fields: ['connectionId', 'status'] }, { fields: ['userId'] }] });
+
+export const StrategyValidation = sequelize.define('StrategyValidation', {
+  userId: { type: DataTypes.INTEGER, allowNull: false },
+  strategy: { type: DataTypes.STRING, allowNull: false },
+  version: { type: DataTypes.STRING, allowNull: false },
+  status: { type: DataTypes.ENUM('draft', 'paper_monitoring', 'passed', 'failed', 'expired'), allowNull: false, defaultValue: 'draft' },
+  datasetLicense: { type: DataTypes.STRING, allowNull: false },
+  survivorshipSafe: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  walkForwardWindows: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  costModel: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+  stressResults: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+  paperMetrics: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+  monitoredPaperDays: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  approvedBy: { type: DataTypes.INTEGER },
+  approvedAt: { type: DataTypes.DATE },
+  expiresAt: { type: DataTypes.DATE },
+}, { indexes: [{ fields: ['userId', 'strategy', 'version'], unique: true }, { fields: ['status'] }] });
+
+export const BrokerOrder = sequelize.define('BrokerOrder', {
+  userId: { type: DataTypes.INTEGER, allowNull: false },
+  connectionId: { type: DataTypes.INTEGER, allowNull: false },
+  clientOrderId: { type: DataTypes.STRING, allowNull: false },
+  brokerOrderId: { type: DataTypes.STRING },
+  environment: { type: DataTypes.ENUM('paper', 'live'), allowNull: false },
+  symbol: { type: DataTypes.STRING, allowNull: false },
+  side: { type: DataTypes.STRING, allowNull: false },
+  orderType: { type: DataTypes.STRING, allowNull: false },
+  qty: { type: DataTypes.DECIMAL(24, 8), allowNull: false },
+  status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'pending_submit' },
+  filledQty: { type: DataTypes.DECIMAL(24, 8), allowNull: false, defaultValue: 0 },
+  avgFillPrice: { type: DataTypes.DECIMAL(24, 8) },
+  request: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+  lastBrokerUpdateAt: { type: DataTypes.DATE },
+  lastEventSequence: { type: DataTypes.BIGINT, allowNull: false, defaultValue: 0 },
+  lastError: { type: DataTypes.TEXT },
+}, {
+  indexes: [
+    { fields: ['userId', 'connectionId', 'clientOrderId'], unique: true },
+    { fields: ['connectionId', 'brokerOrderId'] },
+    { fields: ['connectionId', 'status'] },
+  ],
+});
+
+export const BrokerOrderEvent = sequelize.define('BrokerOrderEvent', {
+  brokerOrderId: { type: DataTypes.INTEGER, allowNull: false },
+  eventKey: { type: DataTypes.STRING, allowNull: false, unique: true },
+  eventType: { type: DataTypes.STRING, allowNull: false },
+  brokerTimestamp: { type: DataTypes.DATE, allowNull: false },
+  sequence: { type: DataTypes.BIGINT, allowNull: false, defaultValue: 0 },
+  payload: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+}, { indexes: [{ fields: ['brokerOrderId', 'brokerTimestamp'] }] });
+
+export const ReconciliationRun = sequelize.define('ReconciliationRun', {
+  connectionId: { type: DataTypes.INTEGER, allowNull: false },
+  status: { type: DataTypes.ENUM('running', 'succeeded', 'failed'), allowNull: false, defaultValue: 'running' },
+  startedAt: { type: DataTypes.DATE, allowNull: false },
+  completedAt: { type: DataTypes.DATE },
+  brokerOrderCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  brokerPositionCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  changedOrderCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  orphanOrderCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  accountSnapshot: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+  positionSnapshot: { type: DataTypes.JSONB, allowNull: false, defaultValue: [] },
+  error: { type: DataTypes.TEXT },
+}, { indexes: [{ fields: ['connectionId', 'startedAt'] }] });
+
+export const KillSwitchDrill = sequelize.define('KillSwitchDrill', {
+  connectionId: { type: DataTypes.INTEGER, allowNull: false },
+  initiatedBy: { type: DataTypes.INTEGER, allowNull: false },
+  mode: { type: DataTypes.ENUM('drill', 'incident'), allowNull: false },
+  reason: { type: DataTypes.TEXT, allowNull: false },
+  cancelSucceeded: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  flattenSucceeded: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  completedAt: { type: DataTypes.DATE },
+  details: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} },
+}, { indexes: [{ fields: ['connectionId', 'createdAt'] }] });
 
 // ─── Event Calendar (earnings / macro events) ───
 export const EventCalendar = sequelize.define('EventCalendar', {
@@ -589,7 +720,9 @@ export default {
   User, TrailingStop, CopyTrade, WheelStrategy, WatchlistItem,
   TradeJournal, PriceAlert, TradeSignal, StockScreener,
   RiskAssessment, PortfolioItem, Sentiment, OptionsChain, MarketNews,
-  AiUsage, AutoTraderState, AutoTraderTrade, EventCalendar, AuditLog,
+  AiUsage, RuntimeAiResult, AutoTraderState, AutoTraderTrade, EventCalendar, AuditLog,
+  BrokerConnection, LiveActivation, StrategyValidation, BrokerOrder,
+  BrokerOrderEvent, ReconciliationRun, KillSwitchDrill,
   RevokedToken, PasswordResetToken, Notification, Session,
   PositionNote,
   Theme, ThemeConstituent, ThemeAlert,

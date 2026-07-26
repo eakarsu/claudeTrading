@@ -120,62 +120,42 @@ fi
 SERVER_PORT=${SERVER_PORT:-3001}
 CLIENT_PORT=${CLIENT_PORT:-5173}
 
-# Flags:
-#   --reseed   Force the seed to reset existing rows. Without this flag the
-#              seed skips when any users exist (so it's safe to restart
-#              start.sh without clobbering local data). Use --reseed after
-#              pulling a migration that added a column the seed populates.
+# Flags are explicit maintenance operations; default startup mutates no schema or seed data.
 RESEED=0
+SEED=0
+MIGRATE=0
 for arg in "$@"; do
   case "$arg" in
-    --reseed|--reset) RESEED=1 ;;
+    --seed) SEED=1 ;;
+    --reseed|--reset) RESEED=1; SEED=1 ;;
+    --migrate) MIGRATE=1 ;;
     -h|--help)
-      echo "Usage: ./start.sh [--reseed]"
-      echo "  --reseed   Drop and re-insert all seed data (equivalent to 'node seed.js --reset')."
+      echo "Usage: ./start.sh [--migrate] [--seed|--reseed]"
+      echo "  --migrate  Apply reviewed migrations to the configured isolated database."
+      echo "  --seed     Seed a new empty installation."
+      echo "  --reseed   Drop and re-insert demo data (destructive and explicit)."
       exit 0
       ;;
   esac
 done
 
-# Step 1: Cleanup — three passes, in order.
-#
-#   1a. If a previous start.sh is still running (pidfile), kill its whole
-#       process group. This is the real fix for EADDRINUSE: killing by port
-#       only catches the listener, not the nodemon parent that will
-#       immediately spawn a fresh one.
-#   1b. Kill any `nodemon`/`node index.js` that belongs to THIS repo, in
-#       case the pidfile is stale or was never written (hard kill / reboot).
-#   1c. Finally, sweep the ports — belt + suspenders.
-echo -e "\n${YELLOW}[1/6] Cleaning up previous instances...${NC}"
+# Step 1: refuse an already-running instance or occupied port.
+echo -e "\n${YELLOW}[1/6] Checking previous instances and ports...${NC}"
 
 if [ -f "$PIDFILE" ]; then
   OLD_PID="$(cat "$PIDFILE" 2>/dev/null || true)"
-  if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then
-    echo -e "  Found previous start.sh (pid $OLD_PID) — stopping its tree."
-    kill_tree "$OLD_PID" TERM
-    # Give it 3s to exit gracefully, then SIGKILL the tree.
-    for _ in 1 2 3; do
-      kill -0 "$OLD_PID" 2>/dev/null || break
-      sleep 1
-    done
-    kill_tree "$OLD_PID" KILL
+  OLD_CMD="$(ps -p "$OLD_PID" -o command= 2>/dev/null || true)"
+  if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null && [[ "$OLD_CMD" == *"$REPO_ROOT/start.sh"* ]]; then
+    echo -e "${RED}  This checkout is already running as pid $OLD_PID; refusing to terminate it.${NC}" >&2
+    exit 1
   fi
   rm -f "$PIDFILE"
 fi
 
-# Kill any stray server/client processes from THIS repo by matching the
-# working directory (prevents nuking an unrelated Node app on the same box).
-if command -v pgrep >/dev/null 2>&1; then
-  for PID in $(pgrep -f "nodemon.*index.js" 2>/dev/null) $(pgrep -f "node .*${REPO_ROOT}/server/index.js" 2>/dev/null) $(pgrep -f "vite.*--port ${CLIENT_PORT:-5173}" 2>/dev/null); do
-    PCWD="$(lsof -p "$PID" 2>/dev/null | awk '$4=="cwd"{print $NF; exit}')"
-    case "$PCWD" in
-      "$REPO_ROOT"*) kill -9 "$PID" 2>/dev/null || true ;;
-    esac
-  done
+if lsof -tiTCP:"$SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1 || lsof -tiTCP:"$CLIENT_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  echo -e "${RED}  Required port is already in use. Stop its owner explicitly or choose different SERVER_PORT/CLIENT_PORT values.${NC}"
+  exit 1
 fi
-
-lsof -ti:${SERVER_PORT:-3001} 2>/dev/null | xargs kill -9 2>/dev/null || true
-lsof -ti:${CLIENT_PORT:-5173} 2>/dev/null | xargs kill -9 2>/dev/null || true
 echo -e "${GREEN}  Cleanup complete.${NC}"
 
 # Record our own PID so the next invocation can find + kill our process
@@ -189,55 +169,53 @@ if ! command -v psql &> /dev/null; then
   exit 1
 fi
 
-# Start postgres if not running
-if ! pg_isready -q 2>/dev/null; then
-  echo -e "  Starting PostgreSQL..."
-  brew services start postgresql@16 2>/dev/null || brew services start postgresql 2>/dev/null || true
-  sleep 2
+# Startup never installs or starts a system database service.
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo -e "${RED}  DATABASE_URL is required.${NC}" >&2
+  exit 1
+fi
+if ! pg_isready -d "$DATABASE_URL" -q 2>/dev/null; then
+  echo -e "${RED}  PostgreSQL is unavailable; provision the configured isolated database first.${NC}" >&2
+  exit 1
 fi
 
-# Create database if not exists
-echo -e "  Creating database claude_trading..."
-psql postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'claude_trading'" 2>/dev/null | grep -q 1 || \
-  createdb claude_trading 2>/dev/null || \
-  psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'claude_trading'" 2>/dev/null | grep -q 1 || \
-  createdb -U postgres claude_trading 2>/dev/null || true
+if ! psql "$DATABASE_URL" -tAc "SELECT 1" 2>/dev/null | grep -q 1; then
+  echo -e "${RED}  The configured PostgreSQL database is unavailable.${NC}" >&2
+  exit 1
+fi
 echo -e "${GREEN}  Database ready.${NC}"
 
-# Step 3: Install server dependencies
-echo -e "\n${YELLOW}[3/6] Installing server dependencies...${NC}"
-cd server
-npm install --silent
-cd ..
+# Steps 3/4: require reproducibly bootstrapped dependencies.
+echo -e "\n${YELLOW}[3/6] Checking dependencies...${NC}"
+for dependency_dir in server/node_modules client/node_modules; do
+  [ -d "$dependency_dir" ] || { echo -e "${RED}  Missing $dependency_dir; run the documented bootstrap step first.${NC}" >&2; exit 1; }
+done
+echo -e "${GREEN}  Dependencies are present.${NC}"
 
-# Step 4: Install client dependencies
-echo -e "\n${YELLOW}[4/6] Installing client dependencies...${NC}"
-cd client
-npm install --silent
-cd ..
-
-# Step 5: Migrate + seed database
-# Run migrations BEFORE seed. Migrations are idempotent and add any columns
+# Step 5: migrate and optionally seed the database.
+# Run migrations BEFORE an explicitly requested seed. Migrations are idempotent and add any columns
 # that an older installation is missing (e.g. the per-user `userId` columns
 # added in 0002, or the 2FA / token-revocation artifacts added in 0003).
 # Without this, a DB created under a prior schema will fail the seed with
 # errors like `column "userId" does not exist`.
-echo -e "\n${YELLOW}[5/6] Migrating + seeding database...${NC}"
+echo -e "\n${YELLOW}[5/6] Checking explicit database maintenance flags...${NC}"
 cd server
-node migrations/umzug.js up
+if [ "$MIGRATE" = "1" ]; then
+  node migrations/umzug.js up
+fi
 if [ "$RESEED" = "1" ]; then
   echo -e "  ${YELLOW}--reseed flag set — forcing seed reset.${NC}"
   node seed.js --reset
-else
-  # seed.js is a no-op if users already exist, so this is safe to re-run.
+elif [ "$SEED" = "1" ]; then
   node seed.js
 fi
 cd ..
 
-# Clean ports again right before starting (seed.js or leftover processes may have grabbed them)
-lsof -ti:$SERVER_PORT | xargs kill -9 2>/dev/null || true
-lsof -ti:$CLIENT_PORT | xargs kill -9 2>/dev/null || true
-sleep 1
+# Refuse a race rather than killing whichever process acquired a port.
+if lsof -tiTCP:"$SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1 || lsof -tiTCP:"$CLIENT_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  echo -e "${RED}Required port became busy during setup; aborting without terminating it.${NC}"
+  exit 1
+fi
 
 # Step 6: Start both servers with hot reload
 echo -e "\n${YELLOW}[6/6] Starting servers with hot reload...${NC}"
@@ -260,25 +238,20 @@ cleanup() {
   sleep 1
   [ -n "$BACKEND_PID"  ] && kill_tree "$BACKEND_PID"  KILL
   [ -n "$FRONTEND_PID" ] && kill_tree "$FRONTEND_PID" KILL
-  # Final port sweep — defensive, catches anything we missed.
-  lsof -ti:${SERVER_PORT:-3001} 2>/dev/null | xargs kill -9 2>/dev/null || true
-  lsof -ti:${CLIENT_PORT:-5173} 2>/dev/null | xargs kill -9 2>/dev/null || true
   rm -f "$PIDFILE"
   exit 0
 }
 trap cleanup SIGINT SIGTERM EXIT
 
-# Start backend with nodemon (hot reload). Capture its PID so kill_tree
-# can walk its descendants on shutdown.
-cd server
-npx nodemon --watch . --ext js,json index.js &
+SERVER_DIR="$REPO_ROOT/server"
+CLIENT_DIR="$REPO_ROOT/client"
+if [ -n "${RUNTIME_PROJECT_SOURCE:-}" ] && [ -d "$RUNTIME_PROJECT_SOURCE/server" ] && [ -d "$RUNTIME_PROJECT_SOURCE/client" ]; then
+  SERVER_DIR="$RUNTIME_PROJECT_SOURCE/server"
+  CLIENT_DIR="$RUNTIME_PROJECT_SOURCE/client"
+fi
+(cd "$SERVER_DIR" && exec env SERVER_HOST=127.0.0.1 SERVER_PORT="$SERVER_PORT" CLIENT_PORT="$CLIENT_PORT" node index.js) &
 BACKEND_PID=$!
-cd ..
-
-# Start frontend with Vite (hot reload built-in)
-cd client
-npx vite --port $CLIENT_PORT &
+(cd "$CLIENT_DIR" && exec env SERVER_PORT="$SERVER_PORT" ./node_modules/.bin/vite --host 127.0.0.1 --port "$CLIENT_PORT") &
 FRONTEND_PID=$!
-cd ..
 
 wait

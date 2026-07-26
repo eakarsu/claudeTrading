@@ -122,8 +122,11 @@ export const aiPoliticianAnalysis = () =>
 export const alpacaAccount = () => request('/alpaca/account');
 export const alpacaPositions = () => request('/alpaca/positions');
 export const alpacaOrders = (status) => request(`/alpaca/orders${status ? `?status=${status}` : ''}`);
-export const alpacaPlaceOrder = ({ symbol, qty, side, type, time_in_force, limit_price, stop_price }) =>
-  request('/alpaca/orders', { method: 'POST', body: JSON.stringify({ symbol, qty, side, type, time_in_force, limit_price, stop_price }) });
+export const alpacaPlaceOrder = async ({ symbol, qty, side, type, time_in_force, limit_price, stop_price }) => {
+  const result = await request('/alpaca/orders', { method: 'POST', body: JSON.stringify({ symbol, qty, side, type, time_in_force, limit_price, stop_price }) });
+  const order = result.order || result;
+  return { ...order, id: order.brokerOrderId || order.id, type: order.orderType || order.type };
+};
 export const alpacaCancelOrder = (id) => request(`/alpaca/orders/${id}`, { method: 'DELETE' });
 export const alpacaClosePosition = (symbol) =>
   request(`/alpaca/positions/${encodeURIComponent(symbol)}`, { method: 'DELETE' });
@@ -202,6 +205,17 @@ export const stopAutoTrader = () =>
   request('/auto-trader/stop', { method: 'POST' });
 export const getAutoTraderStatus = () => request('/auto-trader/status');
 export const getAutoTraderMode = () => request('/auto-trader/mode');
+
+// Governed broker connections, durable ledger, and operator controls.
+export const listBrokerConnections = () => request('/broker-governance/connections');
+export const configureBrokerConnection = (data) =>
+  request('/broker-governance/connections', { method: 'POST', body: JSON.stringify(data) });
+export const listGovernedOrders = () => request('/broker-governance/orders');
+export const reconcileBrokerConnection = (id) =>
+  request(`/broker-governance/connections/${id}/reconcile`, { method: 'POST' });
+export const runKillSwitchDrill = (id, reason) =>
+  request(`/broker-governance/connections/${id}/kill-switch`, { method: 'POST', body: JSON.stringify({ mode: 'drill', reason }) });
+export const getLiveTradingDisclosure = () => request('/broker-governance/disclosure');
 
 // Strategy A/B Harness — shadow-mode comparison of two strategies.
 export const listStrategyAbRuns = ({ limit = 50, offset = 0 } = {}) => {
