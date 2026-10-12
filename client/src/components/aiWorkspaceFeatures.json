@@ -1,0 +1,58 @@
+[
+  {
+    "name": "AiPortfolioRiskAttributionBeyondReportGenerationPage",
+    "id": "gap-ai-claudetrading/ai-portfolio-risk-attribution-beyond-report-generation",
+    "title": "AI portfolio-risk attribution beyond report generation",
+    "description": "Prepare a professional advisory report for ai portfolio-risk attribution beyond report generation using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "AiTradeJournalLessonExtractorPage",
+    "id": "gap-ai-claudetrading/ai-trade-journal-lesson-extractor",
+    "title": "AI trade-journal lesson extractor",
+    "description": "Prepare a professional advisory report for ai trade-journal lesson extractor using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "AiWalkForwardCurveFittingDetectorPage",
+    "id": "gap-ai-claudetrading/ai-walk-forward-curve-fitting-detector",
+    "title": "AI walk-forward / curve-fitting detector",
+    "description": "Prepare a professional advisory report for ai walk-forward / curve-fitting detector using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "KycamlWorkflowForPaidUsersPage",
+    "id": "gap-nonai-claudetrading/kycaml-workflow-for-paid-users",
+    "title": "KYC/AML workflow for paid users",
+    "description": "Prepare a professional advisory report for kyc/aml workflow for paid users using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "MultiAccountAllocationPmmStylePage",
+    "id": "gap-nonai-claudetrading/multi-account-allocation-pmm-style",
+    "title": "Multi-account allocation (PMM-style)",
+    "description": "Prepare a professional advisory report for multi-account allocation (pmm-style) using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "RegulatoryComplianceFinraMifidReportingPage",
+    "id": "gap-nonai-claudetrading/regulatory-compliance-finra-mifid-reporting",
+    "title": "Regulatory compliance (FINRA, MiFID) reporting",
+    "description": "Prepare a professional advisory report for regulatory compliance (finra, mifid) reporting using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "StrategyMarketplaceWithMonetizationPage",
+    "id": "gap-nonai-claudetrading/strategy-marketplace-with-monetization",
+    "title": "Strategy marketplace with monetization",
+    "description": "Prepare a professional advisory report for strategy marketplace with monetization using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "TaxLotWashSaleTrackingPage",
+    "id": "gap-nonai-claudetrading/tax-lot-wash-sale-tracking",
+    "title": "Tax-lot / wash-sale tracking",
+    "description": "Prepare a professional advisory report for tax-lot / wash-sale tracking using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  }
+]

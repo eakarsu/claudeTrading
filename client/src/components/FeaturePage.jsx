@@ -80,8 +80,9 @@ export default function FeaturePage({ resource, title, fields, cardRender, defau
         </div>
       </div>
 
+      {pageAIMut.isError && <div role="alert" className="alert alert-error">AI overview is unavailable: {pageAIMut.error.message}</div>}
       <AIOutput
-        content={pageAIMut.data?.analysis || (pageAIMut.error ? `Error: ${pageAIMut.error.message}` : null)}
+        content={pageAIMut.data?.analysis ?? null}
         loading={pageAIMut.isPending}
         model={pageAIMut.data?.model}
         usage={pageAIMut.data?.usage}

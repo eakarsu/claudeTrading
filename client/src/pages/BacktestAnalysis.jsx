@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FiPieChart, FiFilter, FiRefreshCw } from 'react-icons/fi';
-import { analyzeTrades, analyzeSavedBacktest, listSavedBacktests } from '../api';
+import { analyzeTrades, analyzeSavedBacktest, listSavedBacktests, asRows } from '../api';
 
 /**
  * Backtesting Analysis — freqtrade's `--analysis-groups 0..5` tabulator.
@@ -32,7 +32,7 @@ export default function BacktestAnalysis() {
   useEffect(() => {
     listSavedBacktests()
       .then((r) => {
-        const items = r.items || [];
+        const items = asRows(r);
         setSaved(items);
         if (!savedId && items[0]) setSavedId(items[0].id);
       })

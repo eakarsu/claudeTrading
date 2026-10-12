@@ -1,3 +1,4 @@
+import FormattedAIReport from "../components/FormattedAIReport";
 import React, { useEffect, useState } from 'react';
 import { FiDatabase, FiPlus, FiTrash2, FiRefreshCw, FiEye, FiDownload } from 'react-icons/fi';
 import {
@@ -9,6 +10,7 @@ import {
   downloadSavedBacktestTrades,
   downloadSavedBacktestEquity,
   downloadSavedBacktestNotebook,
+  asRows,
 } from '../api';
 
 /**
@@ -40,7 +42,7 @@ export default function SavedBacktests() {
 
   const refresh = async () => {
     setLoading(true);
-    try { const r = await listSavedBacktests(); setItems(r.items || []); setErr(''); }
+    try { const r = await listSavedBacktests(); setItems(asRows(r)); setErr(''); }
     catch (e) { setErr(e.message); }
     finally { setLoading(false); }
   };
@@ -219,7 +221,7 @@ export default function SavedBacktests() {
           {loadingDetail ? (
             <div className="page-loading">Loading…</div>
           ) : (
-            <pre className="code-block">{JSON.stringify(selected.result, null, 2)}</pre>
+            <FormattedAIReport response={selected.result} />
           )}
         </section>
       )}

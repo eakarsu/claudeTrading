@@ -23,6 +23,7 @@ async function request(url, options = {}) {
 // Auth
 export const login = (email, password) =>
   request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+export const demoLogin = () => request('/auth/demo-login', { method: 'POST' });
 export const register = (email, password, name) =>
   request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name }) });
 export const logout = () => request('/auth/logout', { method: 'POST' });
@@ -70,6 +71,14 @@ export const markAllNotificationsRead = () => request('/notifications/read-all',
 export const deleteNotification = (id) => request(`/notifications/${id}`, { method: 'DELETE' });
 
 // Generic CRUD
+// List endpoints may use either the legacy `items` envelope or a paginated
+// `data` envelope. Never pass an object through to a view expecting rows.
+export const asRows = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
 // Server now paginates and returns { items, total, limit, offset }.
 // Unwrap `items` here so call sites keep receiving an array.
 export const getAll = async (resource, { limit, offset } = {}) => {
@@ -78,7 +87,7 @@ export const getAll = async (resource, { limit, offset } = {}) => {
   if (offset != null) qs.set('offset', offset);
   const suffix = qs.toString() ? `?${qs}` : '';
   const res = await request(`/${resource}${suffix}`);
-  return Array.isArray(res) ? res : (res.items || []);
+  return asRows(res);
 };
 export const getPage = (resource, { limit, offset } = {}) => {
   const qs = new URLSearchParams();

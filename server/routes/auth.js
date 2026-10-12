@@ -142,6 +142,24 @@ router.post('/login', audit('auth.login', 'user'), validate({ body: loginSchema 
   res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
 }));
 
+// The demo account is provisioned separately. Never expose its password to the client.
+router.post('/demo-login', audit('auth.demo-login', 'user'), asyncHandler(async (req, res) => {
+  checkLoginRate(req);
+  const email = process.env.DEMO_EMAIL;
+  const password = process.env.DEMO_PASSWORD;
+  if (!email || !password) return res.status(503).json({ error: 'Demo sign-in is not configured.' });
+  const user = await User.findOne({ where: { email } });
+  if (!user || !(await bcryptjs.compare(password, user.password))) {
+    return res.status(503).json({ error: 'The configured demo account is unavailable.' });
+  }
+  if (user.totpEnabled && user.totpSecret) {
+    return res.status(409).json({ error: 'This demo account requires two-factor verification. Use the regular sign-in form.' });
+  }
+  const token = generateToken(user.id);
+  await stampSession(req, token, user.id);
+  res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+}));
+
 /**
  * POST /api/auth/verify-totp
  * Completes a 2FA login. Accepts a 6-digit TOTP OR a backup code. Backup-code

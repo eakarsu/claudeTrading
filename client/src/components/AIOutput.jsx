@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FiCpu, FiLoader } from 'react-icons/fi';
+import FormattedAIReport, { reportValue } from './FormattedAIReport';
 
 export default function AIOutput({ content, loading, model, usage }) {
   if (loading) {
@@ -20,7 +21,11 @@ export default function AIOutput({ content, loading, model, usage }) {
     );
   }
 
-  if (!content) return null;
+  if (content === null || content === undefined) return null;
+  const structured = reportValue(content);
+  if (structured && typeof structured === 'object') {
+    return <FormattedAIReport response={structured} model={model} tokens={usage} />;
+  }
 
   return (
     <div className="ai-output">
@@ -30,7 +35,7 @@ export default function AIOutput({ content, loading, model, usage }) {
         {model && <span className="ai-model-badge">{model.split('/').pop()}</span>}
       </div>
       <div className="ai-output-body">
-        <ReactMarkdown>{content}</ReactMarkdown>
+        <ReactMarkdown>{typeof content === 'string' ? (content === '' ? '(empty string)' : content) : String(content)}</ReactMarkdown>
       </div>
       {usage && (
         <div className="ai-output-footer">

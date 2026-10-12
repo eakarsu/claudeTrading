@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, verifyTotpLogin } from '../api';
+import { login, demoLogin, verifyTotpLogin } from '../api';
 import { FiCpu, FiLogIn } from 'react-icons/fi';
 
 export default function Login() {
@@ -31,6 +31,20 @@ export default function Login() {
       setError(err.message);
     }
     setLoading(false);
+  };
+
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await demoLogin();
+      localStorage.setItem('token', res.token);
+      navigate('/');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleTotp = async (e) => {
@@ -68,12 +82,12 @@ export default function Login() {
             {error && <div className="error-msg">{error}</div>}
             <button
               type="button"
-              onClick={() => { setEmail(import.meta.env.VITE_DEMO_EMAIL || ''); setPassword(import.meta.env.VITE_DEMO_PASSWORD || ''); }}
-              disabled={!import.meta.env.VITE_DEMO_EMAIL || !import.meta.env.VITE_DEMO_PASSWORD}
-              aria-label="Auto Fill Demo Credentials"
+              onClick={handleDemoLogin}
+              disabled={loading}
+              aria-label="Sign in with the configured demo account"
               style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
             >
-              Auto Fill Demo Credentials
+              Sign in as demo
             </button>
             <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
               <FiLogIn size={18} /> {loading ? 'Signing in...' : 'Sign In'}

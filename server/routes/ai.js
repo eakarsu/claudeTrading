@@ -29,7 +29,7 @@ const MARKET_SNAPSHOT_SYMBOLS = [
  */
 async function buildMarketSnapshot() {
   const [clock, quotes, news] = await Promise.all([
-    alpaca.getClock().catch((err) => { logger.warn({ err }, 'market-summary: clock failed'); return null; }),
+    Promise.resolve().then(() => alpaca.getClock()).catch((err) => { logger.warn({ err }, 'market-summary: clock failed'); return null; }),
     getLatestTradePrices(MARKET_SNAPSHOT_SYMBOLS, { maxAgeMs: 60_000 })
       .catch((err) => { logger.warn({ err }, 'market-summary: quotes failed'); return {}; }),
     MarketNews.findAll({ order: [['createdAt', 'DESC']], limit: 15 })
@@ -117,8 +117,8 @@ router.post('/portfolio-review', asyncHandler(async (req, res) => {
   // executed. The model gets both so its advice references real numbers.
   const [portfolio, account, alpacaPositions] = await Promise.all([
     PortfolioItem.findAll({ where: { userId: req.userId } }).catch(() => []),
-    alpaca.getAccount().catch(() => null),
-    alpaca.getPositions().catch(() => []),
+    Promise.resolve().then(() => alpaca.getAccount()).catch(() => null),
+    Promise.resolve().then(() => alpaca.getPositions()).catch(() => []),
   ]);
   const holdings = portfolio
     .map((p) => `${p.symbol}: ${p.qty} shares, avg $${p.avgPrice}, current $${p.currentPrice}, P&L $${p.pnl}`)

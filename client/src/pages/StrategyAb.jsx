@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import FormattedAIReport from '../components/FormattedAIReport';
 import {
   listStrategyAbRuns,
   createStrategyAbRun,
@@ -181,7 +182,7 @@ export default function StrategyAb() {
               </div>
               <button disabled={busy} onClick={() => act(critiqueStrategyAbRun, selected.id)}>AI Critique</button>
               {critique && (
-                <pre style={{ marginTop: 12, padding: 10, background: '#111', whiteSpace: 'pre-wrap', maxHeight: 240, overflow: 'auto' }}>{critique}</pre>
+                <FormattedAIReport response={critique} title="Strategy comparison critique" />
               )}
               <h4 style={{ marginTop: 16 }}>Recent Trades</h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>

@@ -1,3 +1,8 @@
+import { authMiddleware as aiWorkspaceDependency1 } from "./middleware/auth.js";
+import aiWorkspaceDependency2 from "./db.js";
+import aiWorkspaceDependency3 from "./aiWorkspaceAdapters.cjs";
+import aiWorkspaceDependency4 from "./aiWorkspace.cjs";
+import { readFileSync as readAIWorkspaceFile } from 'node:fs';
 import './env.js';
 import express from 'express';
 import cors from 'cors';
@@ -95,6 +100,7 @@ const clientPort = process.env.CLIENT_PORT || 5173;
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
   : [`http://localhost:${clientPort}`, `http://127.0.0.1:${clientPort}`];
+allowedOrigins.push(`http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`);
 
 app.use(cors({
   origin(origin, cb) {
@@ -113,6 +119,7 @@ app.use(cors({
 app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  hsts: false, // securityHeaders applies HSTS only to HTTPS production requests.
 }));
 app.use(securityHeaders);
 
@@ -200,6 +207,8 @@ app.use('/api/ai/generate-strategy', aiStrategyRoutes);
 app.use('/api/strategy-ab', strategyAbRoutes);
 app.use('/api/slippage-attribution', slippageAttributionRoutes);
 app.use('/api/broker-governance', brokerGovernanceRoutes);
+app.use('/api/gap-ai-claudetrading', batch09GapAiRoutes);
+app.use('/api/gap-nonai-claudetrading', batch09GapNonaiRoutes);
 
 // ─── CRUD + AI-analyze routers ───
 const crudResources = [
@@ -229,6 +238,15 @@ for (const [path, Model, label] of crudResources) {
 }
 
 // ─── JSON 404 for unknown /api paths (must come BEFORE SPA fallback) ───
+
+// Advisory AI reports only; native execution and approval routes stay unchanged.
+const aiWorkspaceSupport = aiWorkspaceDependency3;
+const aiWorkspaceFeatures = JSON.parse(readAIWorkspaceFile(new URL("./aiWorkspaceFeatures.json", import.meta.url), 'utf8'));
+const aiWorkspaceDatabase = aiWorkspaceSupport.sequelizeQueryClient(aiWorkspaceDependency2);
+app.use('/api/report-workspace', aiWorkspaceDependency4.createAIWorkspaceRouter({
+  pool: aiWorkspaceDatabase, authenticateToken: aiWorkspaceDependency1,
+  aiRateLimiter: aiWorkspaceSupport.createWorkspaceLimiter(), features: aiWorkspaceFeatures,
+}));
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
@@ -241,10 +259,6 @@ app.get('*', (req, res) => {
 });
 
 // ─── Error handler (must be last) ───
-// // === Batch 09 Gaps & Frontend Mounts ===
-app.use('/api/gap-ai-claudetrading', batch09GapAiRoutes);
-app.use('/api/gap-nonai-claudetrading', batch09GapNonaiRoutes); // // === Batch 09 Gaps & Frontend Mounts ===
-
 app.use(errorHandler);
 
 let httpServer = null;

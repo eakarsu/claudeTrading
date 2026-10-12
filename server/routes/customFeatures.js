@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/async.js';
 import { askAI } from '../services/openrouter.js';
+import { wrapUserContent } from '../services/promptSafety.js';
 
 const router = Router();
 
@@ -84,6 +85,34 @@ router.post('/regulatory-report', asyncHandler(async (req, res) => {
   const prompt = `Assemble regulatory reporting items (CAT / FINRA OATS) from blotter. API set: ${Boolean(process.env.REG_REPORTING_API_KEY)}. JSON only.\nPERIOD: ${period}\nBLOTTER: ${JSON.stringify((trade_blotter || []).slice(0, 80))}\nReturn JSON {"summary":{"trades":0,"exceptions":0},"required_reports":[{"name":"","status":"draft|filed|missing"}],"flags":[""]}`;
   const ai = await askAI(prompt, '', { userId: req.user?.id });
   res.json({ type: 'regulatory-report', result: parseJSON(ai) || { raw: ai } });
+}));
+
+// These native single-prompt pages are advisory reports. Keep their public
+// slugs aligned with the URLs the client actually calls.
+const advisoryFeatures = new Map([
+  ['predictive-equity-curve-drawdown-recovery-time', 'equity curve drawdown and recovery time'],
+  ['strategy-correlation-analysis-to-avoid-redundancy', 'strategy correlation and redundancy'],
+  ['walk-forward-analysis-automation', 'walk-forward analysis'],
+  ['trade-journal-nlp-lesson-extraction', 'trade journal lessons'],
+  ['broker-integration-for-live-trading-alpaca-already-partial', 'broker integration readiness'],
+  ['real-time-strategy-monitoring-with-anomaly-alerts', 'strategy monitoring and anomalies'],
+  ['community-strategy-marketplace-with-performance-filtering', 'strategy marketplace performance filtering'],
+  ['regulatory-reporting-automation', 'regulatory reporting workflow'],
+]);
+
+router.post('/:feature', asyncHandler(async (req, res) => {
+  const title = advisoryFeatures.get(req.params.feature);
+  if (!title) return res.status(404).json({ error: 'Unknown AI feature.' });
+  const prompt = String(req.body?.prompt || '').trim();
+  if (prompt.length < 20 || prompt.length > 12000) {
+    return res.status(422).json({ error: 'Describe the request in 20 to 12000 characters.' });
+  }
+  const result = await askAI(
+    wrapUserContent(prompt),
+    `Prepare an advisory ${title} report. State assumptions, missing source data, risks, and reviewable next steps. Do not place trades, file reports, or claim an integration is live.`,
+    { userId: req.userId },
+  );
+  res.json({ analysis: result.content, model: result.model, usage: result.usage });
 }));
 
 export default router;

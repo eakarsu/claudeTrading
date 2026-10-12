@@ -1,3 +1,4 @@
+import AIReportLibrary from "./AIReportLibrary";
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { FiHome, FiTrendingUp, FiCopy, FiRefreshCw, FiEye, FiBook, FiBell,
@@ -99,6 +100,6 @@ export default function Sidebar() {
         <FiLogOut size={18} />
         <span>Logout</span>
       </button>
-    </aside>
+    <AIReportLibrary /></aside>
   );
 }

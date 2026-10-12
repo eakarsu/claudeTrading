@@ -1,3 +1,5 @@
+import FormattedAIReport from '../../components/FormattedAIReport';
+import AIPromptPresets from '../../components/AIPromptPresets';
 // // === Batch 09 Gaps & Frontend Mounts ===
 import React, { useState } from 'react';
 
@@ -27,6 +29,7 @@ export default function TradeJournalNlpLessonExtractionPage() {
     <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Trade journal NLP lesson extraction</h1>
       <p style={{ color: '#666', marginBottom: 16 }}>Generated gap feature for claudeTrading.</p>
+      <AIPromptPresets topic="trade journal nlp lesson extraction" onFill={setInput} disabled={loading} />
       <textarea
         value={input}
         onChange={e => setInput(e.target.value)}
@@ -42,11 +45,7 @@ export default function TradeJournalNlpLessonExtractionPage() {
         {loading ? 'Running...' : 'Run AI'}
       </button>
       {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
-      {result && (
-        <pre style={{ marginTop: 16, padding: 12, background: '#f4f4f4', borderRadius: 6, overflow: 'auto', maxHeight: 500 }}>
-{JSON.stringify(result, null, 2)}
-        </pre>
-      )}
+      {result && <FormattedAIReport response={result} />}
     </div>
   );
 }

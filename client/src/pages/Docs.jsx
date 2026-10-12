@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiRefreshCw, FiExternalLink, FiSearch, FiBookOpen, FiMessageSquare, FiCornerDownLeft } from 'react-icons/fi';
 import { getDocsToc, getDocsPage, searchDocs, refreshDocs, aiChat } from '../api';
+import FormattedAIReport from '../components/FormattedAIReport';
 
 /**
  * Docs browser — sidebar TOC + content pane + search.
@@ -106,7 +107,7 @@ export default function Docs() {
   }, []);
 
   useEffect(() => {
-    if (active == null || !toc) return;
+    if (!active || !toc) { setPage(null); return; }
     let cancelled = false;
     getDocsPage(SOURCE, active)
       .then((p) => { if (!cancelled) setPage(p); })
@@ -235,6 +236,14 @@ export default function Docs() {
 
       <article className="docs-content">
         <section className="docs-ask">
+          <div className="ai-preset-bar" aria-label="Example documentation questions">
+            <strong>Example questions</strong>
+            {[
+              'How does trailing stoploss work in Freqtrade, and what settings should I verify before enabling it?',
+              'Compare backtesting and dry run behavior in Freqtrade. What differences should I expect?',
+              'What checks should I complete before moving a Freqtrade strategy from dry run to live trading?',
+            ].map((question, index) => <button key={index} type="button" disabled={asking} onClick={() => setAskPrompt(question)}>{['Trailing stoploss', 'Backtest vs dry run', 'Live readiness'][index]}</button>)}
+          </div>
           <form className="docs-ask-form" onSubmit={handleAsk}>
             <FiMessageSquare size={14} />
             <input
@@ -249,7 +258,7 @@ export default function Docs() {
           </form>
           {answer && (
             <div className="docs-ask-answer">
-              <div className="docs-ask-text">{answer.text}</div>
+              <FormattedAIReport response={answer.text} title="Documentation answer" />
               {answer.citations?.length > 0 && (
                 <div className="docs-ask-citations">
                   <span className="docs-section-label">Cited pages</span>
@@ -297,7 +306,7 @@ export default function Docs() {
             )}
           </>
         ) : (
-          <div className="docs-empty">Select a page from the sidebar.</div>
+          <div className="docs-empty">{toc.totalPages === 0 ? 'No documentation pages are mirrored yet. Refresh the source when upstream access is available; AI answers cannot cite local pages until then.' : 'Select a page from the sidebar.'}</div>
         )}
       </article>
     </div>

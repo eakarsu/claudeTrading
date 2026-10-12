@@ -1,7 +1,8 @@
+import NativeAIControls from "../components/NativeAIControls.jsx";
 import React, { useState } from 'react';
 import { FiCpu, FiSend, FiTrendingUp, FiBriefcase, FiZap, FiShield, FiLayers, FiCopy } from 'react-icons/fi';
 import * as api from '../api';
-import AIOutput from '../components/AIOutput';
+import FormattedAIReport from '../components/FormattedAIReport';
 
 const aiTools = [
   { id: 'market', icon: FiTrendingUp, label: 'Market Summary', desc: 'Get AI overview of current market conditions', action: api.aiMarketSummary },
@@ -14,15 +15,22 @@ const aiTools = [
 
 export default function AICenter() {
   const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeTool, setActiveTool] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [optionsSymbol, setOptionsSymbol] = useState('TSLA');
+  const examples = [
+    { name: 'Market outlook', question: 'Compare a cautious, balanced, and bullish plan for a diversified US equity portfolio. Explain the evidence to check before trading.', symbol: 'SPY' },
+    { name: 'Portfolio review', question: 'Review concentration, drawdown risk, and diversification for an illustrative portfolio with 50% broad equities, 30% bonds, and 20% cash. State assumptions.', symbol: 'QQQ' },
+    { name: 'Options planning', question: 'Explain the risks, breakeven, and exit plan for an illustrative defined risk options strategy. Do not assume a live quote or place a trade.', symbol: 'AAPL' },
+  ];
 
   const runTool = async (tool) => {
     setLoading(true);
     setActiveTool(tool.id);
     setResult(null);
+    setError('');
     try {
       let res;
       if (tool.id === 'options') {
@@ -32,7 +40,7 @@ export default function AICenter() {
       }
       setResult(res);
     } catch (err) {
-      setResult({ analysis: `Error: ${err.message}` });
+      setError(`AI analysis is unavailable: ${err.message}`);
     }
     setLoading(false);
   };
@@ -43,25 +51,30 @@ export default function AICenter() {
     setLoading(true);
     setActiveTool('chat');
     setResult(null);
+    setError('');
     try {
       const res = await api.aiChat(chatInput, 'general trading');
       setResult(res);
     } catch (err) {
-      setResult({ analysis: `Error: ${err.message}` });
+      setError(`AI analysis is unavailable: ${err.message}`);
     }
     setLoading(false);
     setChatInput('');
   };
 
   return (
-    <div className="feature-page">
+    <NativeAIControls busy={loading} context="claudeTrading" presets={examples.map((example) => ({ name: example.name, fill: () => {
+      setChatInput(example.question);
+      setOptionsSymbol(example.symbol);
+      return { filled: 2, manual: [] };
+    } }))}><div className="feature-page">
       <div className="page-header">
         <h1><FiCpu /> AI Center</h1>
       </div>
 
       <div className="ai-chat-box">
         <form onSubmit={handleChat} className="ai-chat-form">
-          <input
+          <input data-ai-field={"chatInput"}
             type="text"
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
@@ -89,7 +102,7 @@ export default function AICenter() {
             <p>{tool.desc}</p>
             {tool.id === 'options' && (
               <div className="options-input" onClick={(e) => e.stopPropagation()}>
-                <input
+                <input data-ai-field={"optionsSymbol"}
                   type="text"
                   value={optionsSymbol}
                   onChange={(e) => setOptionsSymbol(e.target.value.toUpperCase())}
@@ -105,12 +118,13 @@ export default function AICenter() {
         ))}
       </div>
 
-      <AIOutput
-        content={result?.analysis}
+      <FormattedAIReport
+        response={result}
+        error={error}
         loading={loading}
         model={result?.model}
-        usage={result?.usage}
+        tokens={result?.usage}
       />
-    </div>
+    </div></NativeAIControls>
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FiCpu, FiPlus, FiTrash2, FiBell, FiEdit2, FiSave, FiX } from 'react-icons/fi';
 import * as api from '../api';
+import FormattedAIReport from '../components/FormattedAIReport';
 
 /**
  * AI Investment Themes page.
@@ -113,7 +114,6 @@ function ThemeDetail({ theme, qc }) {
   const scoreMut = useMutation({
     mutationFn: (symbol) => api.aiManifestoScore(symbol),
     onSuccess: setScoreResult,
-    onError: (err) => alert(`Score failed: ${err.message}`),
   });
 
   const importToWatchlistMut = useMutation({
@@ -175,6 +175,10 @@ function ThemeDetail({ theme, qc }) {
       {/* AI Manifesto Scorer */}
       <div className="theme-scorer">
         <h3><FiCpu /> Score a ticker against the manifesto</h3>
+        <div className="ai-preset-bar" aria-label="Example ticker symbols">
+          <strong>Example tickers</strong>
+          {['NVDA', 'MSFT', 'SPY'].map((symbol) => <button key={symbol} type="button" disabled={scoreMut.isPending} onClick={() => { setScoreSymbol(symbol); setScoreResult(null); scoreMut.reset(); }}>{symbol}</button>)}
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -191,6 +195,7 @@ function ThemeDetail({ theme, qc }) {
             {scoreMut.isPending ? 'Scoring…' : 'Score'}
           </button>
         </form>
+        {scoreMut.isError && <div role="alert" className="alert alert-error">AI scoring is unavailable: {scoreMut.error.message}</div>}
         {scoreResult && <ManifestoScoreOutput result={scoreResult} themes={theme} />}
       </div>
 
@@ -284,7 +289,8 @@ function ConstituentsTable({ theme, qc }) {
 
 // ─── AI score output — renders the structured JSON as a bar chart grid ────
 function ManifestoScoreOutput({ result }) {
-  if (!result || !Array.isArray(result.scores)) return null;
+  if (!result) return null;
+  if (!Array.isArray(result.scores)) return <FormattedAIReport response={result} title="Manifesto score" />;
   return (
     <div className="manifesto-scores">
       <div className="overall">
