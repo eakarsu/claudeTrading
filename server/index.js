@@ -92,6 +92,7 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 const PORT = process.env.SERVER_PORT || 3001;
 const HOST = process.env.SERVER_HOST || '127.0.0.1';
 

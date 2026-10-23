@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, demoLogin, verifyTotpLogin } from '../api';
+import { login, verifyTotpLogin } from '../api';
 import { FiCpu, FiLogIn } from 'react-icons/fi';
 
 export default function Login() {
@@ -31,20 +31,6 @@ export default function Login() {
       setError(err.message);
     }
     setLoading(false);
-  };
-
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await demoLogin();
-      localStorage.setItem('token', res.token);
-      navigate('/');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleTotp = async (e) => {
@@ -82,12 +68,18 @@ export default function Login() {
             {error && <div className="error-msg">{error}</div>}
             <button
               type="button"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              aria-label="Sign in with the configured demo account"
+              onClick={async () => {
+                if (import.meta.env.VITE_DEMO_EMAIL && import.meta.env.VITE_DEMO_PASSWORD) { setEmail(import.meta.env.VITE_DEMO_EMAIL); setPassword(import.meta.env.VITE_DEMO_PASSWORD); return; }
+                try {
+                  const response = await fetch('/api/auth/demo-credentials', { cache: 'no-store' });
+                  if (response.ok) { const data = await response.json(); if (data?.email && data?.password) { setEmail(data.email); setPassword(data.password); return; } }
+                } catch { /* fall through to message below */ }
+                setError('Demo credentials are not configured for this environment.');
+              }}
+              aria-label="Fill demo credentials"
               style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
             >
-              Sign in as demo
+              Fill demo credentials
             </button>
             <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
               <FiLogIn size={18} /> {loading ? 'Signing in...' : 'Sign In'}
